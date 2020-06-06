@@ -25,7 +25,7 @@ curia_user="curia"
 curia_group="curia"
 curia_root="/srv/curia"
 curia_domain=YOUR.DOMAIN.COM
-https_port=334
+https_port=443
 turn_port=8001
 curia_email=CURIA@MAILPROVIDER.COM
 smtp_host=SMTP.MAILPROVIDER.COM
@@ -46,6 +46,7 @@ actions=(
 	"Create user for curia server"\
 	"Create letsencrypt SSL keys"\
 	"Clone Curia GIT repository"\
+	"Install node modules"\
 	"Start server for the first time"\
 )
 
@@ -353,7 +354,7 @@ case $action in
 		;;
 	8)
 		parse_config_file
-		confirm "mkdir -p $CURIA_ROOT"
+		confirm "mkdir -p $CURIA_ROOT; chown $CURIA_USER:$CURIA_GROUP $CURIA_ROOT"
 		next_step
 		;;
 	9)
@@ -368,6 +369,19 @@ case $action in
 		next_step
 		;;
 	11)
+		parse_config_file
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone https://github.com/hwirth/curia_chat/; mv curia_chat/* .; rm -rf curia_chat\""
+		next_step
+		;;
+	12)
+		confirm "npm install npm@latest -g"
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; npm install\""
+		next_step
+		;;
+	12)
+		parse_config_file
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; node main.js --first-run\""
+		#next_step
 		;;
 	*)
 		echo "Unknown option: $@"

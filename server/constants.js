@@ -71,11 +71,11 @@ const SETTINGS = {
 	REPORT_REMOTE_ERRORS_TO_EVERYONE: DEV_SERVER,   // Send client JS errors to all other connected users
 
 	LOG: {
-		FILE_NAME     : '/var/log/curia/chat_server.log',    // File name for log output
-		TO_CONSOLE    : DEV_SERVER,                          // Whether to write color_log() output to STDOUT
-		TO_FILE       : DEV_SERVER,                          // Whether to write color_log() output to the file
-		MAX_FILE_SIZE : ((true) ? 1000*1000 : null),         // After each write, file size will be adjusted
-		MAX_DEPTH     : ((DEV_SERVER) ? 3 : 3),              // null or int, how detailed objects are logged
+		FILE_NAME     : '/var/log/curia/chat_server.log',         // File name for log output
+		TO_CONSOLE    : (config_file.LOG_TO_CONSOLE == 'true'),   // Whether color_log() outputs to STDOUT
+		TO_FILE       : DEV_SERVER,                               // Whether color_log() outputs to file
+		MAX_FILE_SIZE : ((true) ? 1000*1000 : null),              // After write, file size will be adjusted
+		MAX_DEPTH     : ((DEV_SERVER) ? 3 : 3),                   // null or int, objects log detail
 	},
 
 	ALLOWED_URI_CHARS  : 'abcdefghijklmnopqrstuvwxyz0123456789_.?&%=-+/:',    // http server white list

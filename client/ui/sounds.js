@@ -398,7 +398,7 @@ export const Synth = function (app, chat) {
 		self.ringTone = null;
 		self.volume = SETTINGS.SOUNDS.VOLUME;
 
-		self.responsiveVoiceLoaded = (app.dom.scriptResponsiveVoice !== null);
+		self.responsiveVoiceLoaded = !!app.dom.scriptResponsiveVoice;
 
 		/**
 		 * enable_sound()

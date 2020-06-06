@@ -1,6 +1,6 @@
 {
 	"private": "true",
-	"name": "Curia Chat Server",
+	"name": "curia-chat-server",
 	"version": "0.0.1",
 	"description": "https/wss server for the Curia Chat virtual classroom",
 	"keywords": "chat,video,webrtc,classroom",
@@ -12,8 +12,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "github:hwirth/curia_chat",
-		"directory": "server/curia_chat"
+		"url": "github:hwirth/curia_chat"
 	},
 	"license": "copy(l)eft",
 	"config": {
@@ -21,15 +20,18 @@
 	},
 	"main": "curia_server.js",
 	"scripts": {
-		"start": "node curia_server.js"
+		"start": "node main.js"
 	},
 	"dependencies": {
+		"follow-redirects": "^1.11.0",
+		"fs.realpath": "^1.0.0",
 		"glob": "^7.1.6",
 		"image-size": "^0.8.3",
 		"nodemailer": "^6.4.6",
 		"re-require-module": "^1.0.2",
 		"read": "^1.0.7",
-		"whois": "^2.12.1"
+		"whois": "^2.12.1",
+		"ws": "^7.3.0"
 	},
 	"os": "linux"
 }
