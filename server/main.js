@@ -66,7 +66,7 @@ async function init () {
 	console.log( '| PRIVATE KEY       ', SSL_KEYS.PRIVATE );
 	console.log( '| PUBLIC KEY        ', SSL_KEYS.PUBLIC );
 	console.log( '| DOCUMENT_ROOT     ', SETTINGS.SERVER.DOCUMENT_ROOT );
-	console.log( '| LOG TO CONSOLE    ', SETTINGS.LOG.TO_FILE );
+	console.log( '| LOG TO CONSOLE    ', SETTINGS.LOG.TO_CONSOLE );
 	console.log( '| LOG TO FILE       ', SETTINGS.LOG.TO_FILE, SETTINGS.LOG.FILE_NAME );
 	console.log( '| LOG MAX FILE SIZE ', Math.round( SETTINGS.LOG.MAX_FILE_SIZE / 1024 ), 'K' );
 	console.log( '| LOG MAX DEPTH     ', SETTINGS.LOG.MAX_DEPTH );

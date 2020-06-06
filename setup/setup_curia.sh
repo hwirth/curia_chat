@@ -45,6 +45,7 @@ actions=(
 	"Create directory struction"\
 	"Create user for curia server"\
 	"Create letsencrypt SSL keys"\
+	"Upgrade npm"\
 	"Clone Curia GIT repository"\
 	"Install node modules"\
 	"Start server for the first time"\
@@ -148,10 +149,12 @@ CURIA_GROUP		${curia_group}
 CURIA_ROOT              ${curia_root}
 CURIA_DOMAIN		${curia_domain}
 
+LOG_TO_FILE		true
+LOG_TO_CONSOLE		true
+
 SSL_PUBLIC_KEY_FILE	/etc/letsencrypt/live/${curia_domain}/cert.pem
 SSL_PRIVATE_KEY_FILE	/etc/letsencrypt/live/${curia_domain}/privkey.pem
 
-HTTPS_DOCUMENT_ROOT     ${curia_root}/client
 HTTPS_PORT		${https_port}
 
 TURN_SERVER_DOMAIN	${curia_domain}
@@ -183,15 +186,13 @@ EOF
 ##################################################################################################################119:#
 
 function parse_config_file () {
-	test -f ./secrets/curia_chat.conf && export config_file_name=./curia_chat.conf
-	#test -f ./secrets/curia_chat.conf && export config_file_name=./secrets/curia_chat.conf
-	#test -f /etc/curia_chat.conf && export config_file_name=/etc/curia_chat.conf
-
-	while read -r key value; do
-		[[ $key == \#* ]] && continue;
-		[[ $key == '' ]] && continue;
-		export "$key=$value"
-	done < $config_file_name
+	if [ -f $config_file_name ] ; then
+		while read -r key value; do
+			[[ $key == \#* ]] && continue;
+			[[ $key == '' ]] && continue;
+			export "$key=$value"
+		done < $config_file_name
+	fi
 }
 
 
@@ -204,6 +205,9 @@ function parse_config_file () {
 current_host=$(hostname)
 script_name=$(basename $0)
 
+#
+# Find out, which step to execute
+#
 description=${actions["$1"]}
 case "$1" in
 	"")
@@ -218,10 +222,11 @@ case "$1" in
 		fi
 esac
 
-
-
 step="STEP $action: ${actions[$action]}"
 
+#
+# Show overwiew
+#
 echo -e "$color_normal.------------------------------------------------------------------------------"
 if [ "$action" == "1" ] ; then
 	echo "| CURIA SERVER SETUP"
@@ -240,8 +245,14 @@ else
 	echo "'------------------------------------------------------------------------------"
 fi
 
+#
+# Try to read /etc/curia_chat.conf
+#
+parse_config_file
 
-
+#
+# Execute selected step
+#
 case $action in
 	1)
 		echo "Check the values above and adjust the variables in this script as needed."
@@ -353,36 +364,38 @@ case $action in
 		next_step
 		;;
 	8)
-		parse_config_file
 		confirm "mkdir -p $CURIA_ROOT; chown $CURIA_USER:$CURIA_GROUP $CURIA_ROOT"
+		confirm "mkdir -p /var/log/curia; chown $CURIA_USER:$CURIA_GROUP /var/log/curia"
 		next_step
 		;;
 	9)
-		parse_config_file
 		#confirm "adduser --no-create-home --disabled-password --disabled-login $curia_user"
 		confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
 		next_step
 		;;
 	10)
-		parse_config_file
 		certbot certonly --dry-run --standalone --preferred-challenges http -d $CURIA_DOMAIN
 		next_step
 		;;
 	11)
-		parse_config_file
+		confirm "npm install npm@latest -g"
+		next_step
+		;;
+	12)
 		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone https://github.com/hwirth/curia_chat/; mv curia_chat/* .; rm -rf curia_chat\""
 		next_step
 		;;
-	12)
-		confirm "npm install npm@latest -g"
+	13)
 		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; npm install\""
 		next_step
 		;;
-	12)
-		parse_config_file
-		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; node main.js --first-run\""
-		#next_step
+	14)
+		confirm "cd $CURIA_ROOT/server; node main.js --first-run"
+		next_step
 		;;
 	*)
 		echo "Unknown option: $@"
 esac
+
+
+#EOF

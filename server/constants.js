@@ -48,6 +48,8 @@ function load_configuration () {
 
 load_configuration();
 
+console.log( config_file );
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 // SETTINGS
@@ -73,7 +75,7 @@ const SETTINGS = {
 	LOG: {
 		FILE_NAME     : '/var/log/curia/chat_server.log',         // File name for log output
 		TO_CONSOLE    : (config_file.LOG_TO_CONSOLE == 'true'),   // Whether color_log() outputs to STDOUT
-		TO_FILE       : DEV_SERVER,                               // Whether color_log() outputs to file
+		TO_FILE       : (config_file.LOG_TO_FILE == 'true'),      // Whether color_log() outputs to file
 		MAX_FILE_SIZE : ((true) ? 1000*1000 : null),              // After write, file size will be adjusted
 		MAX_DEPTH     : ((DEV_SERVER) ? 3 : 3),                   // null or int, objects log detail
 	},
