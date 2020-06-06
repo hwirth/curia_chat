@@ -1,6 +1,8 @@
 .*
 git_cheat_sheet.txt
 index.html
+setup/*
+!setup/setup_curia.sh
 !.gitignore
 npm-debug.log
 server/node_modules/

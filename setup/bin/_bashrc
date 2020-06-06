@@ -1,3 +1,0 @@
-#!/bin/bash
-
-. bin/login_defaults.sh
