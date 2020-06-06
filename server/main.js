@@ -61,7 +61,6 @@ async function init () {
 	console.log( '.' + '-'.repeat(78) );
 	console.log( '| ' + PROGRAM_NAME + ' - ' + PROGRAM_VERSION + ' - https/wss server starting' );
 	console.log( '|' + '-'.repeat(78) );
-	console.log( '| CONFIG FILE       ', process.env.config_file );
 	console.log( '| HOST NAME         ', os.hostname() );
 	console.log( '| PORT              ', HTTPS_OPTIONS.port );
 	console.log( '| PRIVATE KEY       ', SSL_KEYS.PRIVATE );
@@ -72,9 +71,7 @@ async function init () {
 	console.log( '| LOG MAX FILE SIZE ', Math.round( SETTINGS.LOG.MAX_FILE_SIZE / 1024 ), 'K' );
 	console.log( '| LOG MAX DEPTH     ', SETTINGS.LOG.MAX_DEPTH );
 	console.log( "'" + '-'.repeat(78) );
-	//console.log( process.env );
 	//process.argv.forEach( (value, index)=>console.log( index + ': ' + value ) );
-
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/

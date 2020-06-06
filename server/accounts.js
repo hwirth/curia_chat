@@ -219,8 +219,16 @@ module.exports.Accounts = function (chat) {
 					EXIT_CODES.ACCOUNTS_ACCESS_FILE,
 				);
 			} else {
-				const new_data = await initial_admin_account();
-				return fs.promises.writeFile( file_name, JSON.stringify( new_data ) );
+				if (chat.commandLineOptions.firstRun) {
+					const new_data = await initial_admin_account();
+					return fs.promises.writeFile( file_name, JSON.stringify( new_data ) );
+				}
+
+				report_and_die(
+					'',
+					'Data directory not found. Did you mean to start me with --first-run?',
+					EXIT_CODES.DATA_DIR_NOT_FOUND
+				);
 			}
 		})
 		.catch( (error)=>{

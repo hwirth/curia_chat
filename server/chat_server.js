@@ -996,6 +996,15 @@ Object.defineProperty(Error.prototype, 'toJSON', config);
 	 * init()
 	 */
 	this.init = async function (new_web_socket) {
+		self.commandLineOptions = {
+			firstRun: false,
+		}
+		process.argv.forEach( (value, index)=>{
+			if (value == "--first-run") {
+				self.commandLineOptions.firstRun = true;
+			}
+		});
+
 		self.webSocket = new_web_socket;
 
 		self.serverData = await new FlatFileDB(
@@ -1034,6 +1043,11 @@ Object.defineProperty(Error.prototype, 'toJSON', config);
 		if (DEBUG.ROOM_DATA) color_log( COLORS.ROOM, 'INIT ROOMS', self.rooms.data );
 
 		//send_mail('harald@ist.org', 'Subj', 'Test');
+
+		if (self.commandLineOptions.firstRun) {
+			color_log( COLORS.DEFAULT, 'FIRST RUN', 'Terminating' );
+			process.exit( EXIT_CODES.FIRST_RUN_DONE );
+		}
 
 	}; // init
 

@@ -16,6 +16,40 @@ module.exports.PROGRAM_VERSION = PROGRAM_VERSION;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
+// PARSE CONFIG FILE
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+const CONGIGURATION_FILE = '/etc/curia_chat.conf';
+const config_file = {};
+
+/**
+ * load_configuration()
+ */
+function load_configuration () {
+	const lines = fs
+	.readFileSync( CONGIGURATION_FILE, 'utf8' )
+	.split( '\n' )
+	.filter( (line)=>{
+		const pos = (line + '#').indexOf( '#' );
+		line = line.substr( 0, pos );
+		return (
+			(line.trim() != '')
+		);
+	});
+
+	lines.forEach( (line)=>{
+		words = line.replace( /\t/g, ' ' ).split( ' ' );
+		const variable = words[0];
+		words.shift();
+		config_file[variable] = words.join( ' ' ).trim();
+	})
+
+}; // load_configuration
+
+load_configuration();
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 // SETTINGS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
@@ -41,7 +75,7 @@ const SETTINGS = {
 		TO_CONSOLE    : DEV_SERVER,                          // Whether to write color_log() output to STDOUT
 		TO_FILE       : DEV_SERVER,                          // Whether to write color_log() output to the file
 		MAX_FILE_SIZE : ((true) ? 1000*1000 : null),         // After each write, file size will be adjusted
-		MAX_DEPTH     : ((DEV_SERVER) ? 3 : 3),             // null or int, how detailed objects are logged
+		MAX_DEPTH     : ((DEV_SERVER) ? 3 : 3),              // null or int, how detailed objects are logged
 	},
 
 	ALLOWED_URI_CHARS  : 'abcdefghijklmnopqrstuvwxyz0123456789_.?&%=-+/:',    // http server white list
@@ -90,14 +124,14 @@ const SETTINGS = {
 		USE_ACCOUNT: 'CONFIGURED',
 		ACCOUNTS: {
 			CONFIGURED: {
-				sender: process.env.EMAIL_SENDER_NAME,
+				sender: config_file.EMAIL_SENDER_NAME,
 				SMTP: {
-					host   : process.env.EMAIL_SMTP_HOST,
-					port   : process.env.EMAIL_SMTP_PORT,
-					secure : (process.env.EMAIL_SMTP_SECURE == 'true'),
+					host   : config_file.EMAIL_SMTP_HOST,
+					port   : config_file.EMAIL_SMTP_PORT,
+					secure : (config_file.EMAIL_SMTP_SECURE == 'true'),
 					auth: {
-						user: process.env.EMAIL_SMTP_AUTH_USER,
-						pass: process.env.EMAIL_SMTP_AUTH_PASS,
+						user: config_file.EMAIL_SMTP_AUTH_USER,
+						pass: config_file.EMAIL_SMTP_AUTH_PASS,
 					},
 					tls: {
 						rejectUnauthorized: false,
@@ -138,16 +172,16 @@ const SETTINGS = {
 	},
 
 	SERVER: {
-		CURIA_USER    : process.env.CURIA_USER,
-		CURIA_GROUP   : process.env.CURIA_GROUP,
-		HTTPS_PORT    : process.env.HTTPS_PORT,
-		DOCUMENT_ROOT : process.env.CURIA_ROOT + '/client',
+		CURIA_USER    : config_file.CURIA_USER,
+		CURIA_GROUP   : config_file.CURIA_GROUP,
+		HTTPS_PORT    : config_file.HTTPS_PORT,
+		DOCUMENT_ROOT : config_file.CURIA_ROOT + '/client',
 	},
 
 	NOTIFY_OWNER: {
-		ENABLED : (process.env.NOTIFY_OWNER_ENABLED == 'true'),
-		DOMAIN  : process.env.NOTIFY_OWNER_DOMAIN,
-		PATH    : process.env.NOTIFY_OWNER_PATH,
+		ENABLED : (config_file.NOTIFY_OWNER_ENABLED == 'true'),
+		DOMAIN  : config_file.NOTIFY_OWNER_DOMAIN,
+		PATH    : config_file.NOTIFY_OWNER_PATH,
 	},
 
 }; // SETTINGS
@@ -162,31 +196,31 @@ module.exports.SETTINGS   = SETTINGS;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 const SSL_KEYS = {
-	PRIVATE : process.env.SSL_PRIVATE_KEY_FILE,
-	PUBLIC  : process.env.SSL_PUBLIC_KEY_FILE,
-}
+	PRIVATE : config_file.SSL_PRIVATE_KEY_FILE,
+	PUBLIC  : config_file.SSL_PUBLIC_KEY_FILE,
+};
 
 
 const HTTPS_OPTIONS = {
 	key  : fs.readFileSync( SSL_KEYS.PRIVATE ),
 	cert : fs.readFileSync( SSL_KEYS.PUBLIC ),
-	port : process.env.HTTPS_PORT,                        // 443, if https is running as standalone web server
+	port : config_file.HTTPS_PORT,                        // 443, if https is running as standalone web server
 	//...agent: new https.Agent({ keepalive: true; }),
 };
 
 
 const WSS_OPTIONS = {
-	port : process.env.HTTPS_PORT,
+	port : config_file.HTTPS_PORT,
 };
 
 
 const TURN_OPTIONS = {
-	SERVER_URI         : process.env.TURN_SERVER_DOMAIN + ':' + process.env.TURN_SERVER_PORT,
-	LEASE_TIME         : process.env.TURN_LEASE_TIME,
-	ALGORITHM          : process.env.TURN_ALGORITHM,
-	USER_NAME          : process.env.TURN_USER_NAME,
-	SECRET_KEY         : process.env.TURN_SECRET_KEY,
-	STATIC_AUTH_SECRET : process.env.TURN_STATIC_SECRET,
+	SERVER_URI         : config_file.TURN_SERVER_DOMAIN + ':' + config_file.TURN_SERVER_PORT,
+	LEASE_TIME         : config_file.TURN_LEASE_TIME,
+	ALGORITHM          : config_file.TURN_ALGORITHM,
+	USER_NAME          : config_file.TURN_USER_NAME,
+	SECRET_KEY         : config_file.TURN_SECRET_KEY,
+	STATIC_AUTH_SECRET : config_file.TURN_STATIC_SECRET,
 
 }; // TURN_OPTIONS
 
@@ -278,7 +312,8 @@ Du kannst gerne eine erneute Anforderung stellen.
 #`,
 //----------------------------------------------------------------------------------------------------------------119:-
 	},
-};
+
+}; // REGISTRATION_MAIL
 
 
 module.exports.REGISTRATION_MAIL = REGISTRATION_MAIL;
@@ -291,13 +326,15 @@ module.exports.REGISTRATION_MAIL = REGISTRATION_MAIL;
 const EXIT_CODES = {
 	REQUESTED_RESTART       : 1,
 	UNKNOWN                 : 2,
-	GLOBAL_ERROR_HANDLER    : 3,
-	UNDETERMINED_HOST       : 4,
-	ACCOUNTS_MKDIR          : 5,
-	ACCOUNTS_ACCESS_FILE    : 6,
-	ACCOUNTS_CREATE_FILE    : 7,
-	FLAT_FILE_DB_READ_ERROR : 8,
+	DATA_DIR_NOT_FOUND      : 3,
+	FIRST_RUN_DONE          : 4,   // 1..4 need to be in synch with  start_server.sh
 
+	GLOBAL_ERROR_HANDLER    : 4,
+	UNDETERMINED_HOST       : 5,
+	ACCOUNTS_MKDIR          : 6,
+	ACCOUNTS_ACCESS_FILE    : 7,
+	ACCOUNTS_CREATE_FILE    : 8,
+	FLAT_FILE_DB_READ_ERROR : 9,
 
 }; // EXIT_CODES
 
@@ -314,7 +351,8 @@ const MIME_TYPES = {
 	jpg  : 'image/jpeg',
 	jpeg : 'image/jpeg',
 	ico  : 'image/x-icon',
-};
+
+}; // MIME_TYPES
 
 
 module.exports.EXIT_CODES = EXIT_CODES;
@@ -410,7 +448,7 @@ const RESPONSE = {
 
 const FAILURE = {
 	NOT_LOGGED_IN            : 'not_logged_in',
-	PASSWORD_MISMATCH       : 'password_mismatch',
+	PASSWORD_MISMATCH        : 'password_mismatch',
 
 	MESSAGE_TEXT_MISSING     : 'message_text_missing',
 

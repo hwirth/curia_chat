@@ -301,7 +301,7 @@ export const RESPONSE = {
 
 export const FAILURE = {
 	NOT_LOGGED_IN            : 'not_logged_in',              //
-	PASSWORD_MISMATCH        : 'password_mismatch',         //
+	PASSWORD_MISMATCH        : 'password_mismatch',          //
 
 	MESSAGE_TEXT_MISSING     : 'message_text_missing',       //
 
