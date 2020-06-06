@@ -257,67 +257,7 @@ command is not sent to the server.
 5. SETUP INSTRUCTIONS
 =====================
 
-This example assumes a single web site run by Apache2 on a Debian server.
-Curia files are stored in  /srv/www/curia.at/htdocs
-
-root@server:~ # cat /etc/debian_version
-10.3
-root@server:~ # apt install apache2 libapache2-mod-php certbot python-certbot-apache
-root@server:~ # a2enmod rewrite headers proxy proxy-wstunnel
-root@server:~ # cat /etc/systemd/system/curia_chat_websocket.service
-[Unit]
-Description=Curia Chat Server
-
-[Service]
-ExecStart=/usr/bin/node /srv/www/curia.at/htdocs/server/curia_server.js
-Type=simple
-User=hmw
-#Group=<alt group>
-
-[Install]
-WantedBy=network.target
-root@server:~ # cat /etc/apache2/apache2.conf
-...
-<Directory /srv/www/>
-	Options Indexes FollowSymLinks
-	AllowOverride All
-	Require all granted
-</Directory>
-...
-root@server:~ # cat /etc/apache2/sites-enabled/000-default.conf
-<VirtualHost *:80>
-	ServerAdmin harald.wirth@gmx.at
-	#ServerName curia.at:443
-	#ServerAlias www.curia.at:443
-	DocumentRoot /srv/www/curia.at/htdocs/
-	ErrorLog ${APACHE_LOG_DIR}/error.log
-	CustomLog ${APACHE_LOG_DIR}/access.log combined
-
-	#SSLEngine on
-
-	#SSLCertificateFile       "/srv/www/curia.at/ssl/server.crt"
-	#SSLCertificateKeyFile    "/srv/www/curia.at/ssl/server.key"
-	# alternatively:
-	#SSLCertificateFile       "/etc/letsencrypt/live/curia.at/cert.pem"
-	#SSLCertificateKeyFile    "/etc/letsencrypt/live/curia.at/privkey.pem"
-	#SSLCertificateChainFile  "/etc/letsencrypt/live/curia.at/chain.pem"
-
-	#SetEnvIf User-Agent ".*MSIE.*" nokeepalive ssl-unclean-shutdown
-	#ProxyRequests Off
-	#ProxyPass /wss ws://127.0.0.1:61001/
-
-	<Directory /srv/www/harald.ist.org/htdocs/>
-		Options FollowSymLinks Indexes
-		AllowOverride All
-		Order allow,deny
-		Allow from all
-		Require all granted
-	</Directory>
-</VirtualHost>
-root@server:~ # systemctl enable apache2 curia_chat_websocket.service
-root@server:~ # systemctl daemon-reload ; systemctl restart apache2 ; systemctl status apache2
-root@server:~ # systemctl daemon-reload ; systemctl restart curia_chat_websocket.service ; systemctl status curia_chat_websocket.service
-
+- This page intentionally left blank -
 
 
 6. MISCELLANEOUS HINTS
