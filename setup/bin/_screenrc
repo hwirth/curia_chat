@@ -1,0 +1,7 @@
+startup_message off
+source ~/.screen_layout
+layout save def
+multiuser on
+acladd root
+acladd harald
+shell -$SHELL

@@ -1,0 +1,534 @@
+##################################################################################################################119:#
+#
+#  W A R N I N G  -  P R E - R E L E A S E
+#  =======================================
+#  This release is not yet meant to be used by other people. I just need the GIT repo to test my installation
+#  procedures. Usually, I would update the README and check that everything is working properly, before pushing,
+#  but not this time. Since I last updated this readme, a lot has changed!
+#  If you actually try to run Curia Chat yourself and run into problems, or just want to try it out on a live server,
+#  feel free to contact me on
+#
+#     https://harald.ist.org/?chat
+#
+#  (Given, that the chat isn't currently crashing there ;-)
+#
+##################################################################################################################119:#
+
+
+                                                  Curia Chat README
+                                        --------------------------------------
+                                        copy(l)eft 2020 http://harald.ist.org/
+                                                 Updated for v0.4.8a
+
+
+INDEX
+=====
+
+	1. Introduction
+	2. Overview
+	3. Files
+		3.1. Entry points
+		3.2. Directory structure
+		3.3. Purpose of the files
+		3.4. Security considerations
+	4. Mode of operation
+		4.1. App initialization
+		4.2. Messages
+		4.3. Request types
+		4.4. Response types
+		4.5. Local commands and HELP_TEXT[]
+	5. Setup instructions
+	6. Miscellaneous hints
+		6.1. Browser can't see old webcam
+		6.2. N900 as WebCam
+		6.3. Make your server talk
+		6.4. Set login name
+	7. TODO
+	8. Issues
+
+
+
+1. INTRODUCTION
+===============
+
+Initially, I was hoping to create a very simple program, that would allow any person without technical inclination to
+run the server on their home computers, but after reading up on WebRTC, I fear, that goal might not be achievable.
+Further research is still going on.
+
+For Curia Chat to run, a web server capable of running NodeJS programs is needed, as well as a TURN server, if video
+conferencing should work. I chose a random TURN server "coturn" and found, that it had a lot of options. I will try to
+provide an easy to read setup guide for the release version of Curia Chat, or perhaps find some alternative ways of
+making things work.
+
+Curia Chat offers a user interface somewhat similar to IRC. This interface is mainly intended to serve as testing
+ground for programming WebRTC video chat connections. The final version is going to provide a very different user
+interface, optimised for being used on tablets and smart phones. The text mode may be hidden altogether.
+
+
+
+2. OVERVIEW
+===========
+
+The user navigates to the web site, containing the client HTML/JavaScript files in their browser. Before they can
+participate in the chat, a nick name has to be chosen. Curia Chat does not provide any registraion mechanism,
+the nick name just has to be not in use at the time. Once "logged" in, the user can type text and have it sent to the
+current chat room. Commands are sent to the server in the same way, they just begin with a slash "/" character.
+
+For WebRTC ICE negotiation (akin to STUN), a special message type  *.SIGNAL  is used. Once logged in, users can invite
+each other to video calls and ideally a peer-to-peer connection is started. Should a NAT or firewall prevent a direct
+connection, an external TURN server can relay the streams as a fallback. I chose "coturn", when initially writing this
+program.
+
+Curia Chat offers a few non-essential features, like profile settings, etc. These are considered "extensions" to the
+bare minimum chat system.
+
+
+
+3. FILES
+========
+
+3.1. ENTRY POINTS
+-----------------
+
+./index.html                    Web site's home page
+./client/index.html             Chat client
+./client/main.js                DOM abstraction, application start
+./client/chat_client.js         The actual chat client
+./server/main.js                Minimalistic HTTP server, creates the web socket, starts the chat server
+./server/chat_server.js         The actual chat server
+./server/start_server.sh        Script that allows the server to restart (calls "node main.js" in a loop)
+
+
+3.2. DIRECTORY STRUCTURE
+------------------------
+
+./                              Document root. Contains a welcome page that links to the actual chat client.
+
+./client/                       Files of Curia Chat Client, as they are to be delivered to the browser.
+./client/images/                Pictures used in the client
+./client/images/icons/          Pictures used in the user interface (button icons, etc.)
+./client/images/browsers/       Icons indicating, which browser a user is using
+./client/ui/                    All scripts that deal with the user interface. Sounds, custom elements, YouTube.
+./client/calls/                 WebRTC video call functions
+./client/extensions/            All other functions that are not part of the bare bone text chat
+
+./server/                       NodeJS files for the server. Also contains  start_server.sh .
+./server/data/                  Account data of registered users
+./server/secrets/               SSL keys
+./server/node_modules           Stuff created by NodeJS
+
+./scripts/                      Some non-essential/experimental server side scripts. E.g. fetching news from orf.at.
+
+
+3.3. PURPOSE OF THE FILES
+-------------------------
+
+./index.html   Web site's home page. Essentially just linking to the client in ./client/index.html
+./README
+
+./client/.htaccess              Control caching etc, when used with the Apache HTTP server
+./client/index.html             Client main file, includes init.js
+./client/main.css               Styles (Layout, chat content, custom HTML elements)
+./client/manual.html            Parsed and displayed in the client.
+                                May be made to look good standalone, too, and moved to ./ in the future.
+./client/main.js                body.onload and the  Application()  object. Instantiates an instance of  ChatClient() .
+./client/chat_client.js         Chat client main file. Deals with user input and displays server responses
+./client/helpers.js             Common utility functions like formatting time, accesing DOM, etc.
+./client/constants.js           Application settings and chat protocol definition
+./client/localize.js            "Database" of strings translated to various languages.
+
+./client/ui/user_interface.js   Singleton/interface to all UI functions. Re-publishes methods of other UI objects.
+./client/ui/tabbed_pages.js     Create and manage tabs, let them blink, etc.
+./client/ui/command_buttons.js  Create/update buttons at the bottom (e.g. indicates if a device is activated)
+./client/ui/dialog.js           Simple modal popup dialog
+./client/ui/knobs.js            Custom HTML element, similar to <input type="range"> in function
+./client/ui/sounds.js           WebAudio sounds used for ringing and beeping
+./client/ui/analyser.js         Debug tool showing an oscilloscope for various audio sources
+./client/ui/youtube.js          Wrapper for the YT API
+
+./client/calls/video_call.js    All functions used by the client to control video chats
+./client/calls/rtc_session.js   Handles actual connection between call participants
+./client/calls/signaler.js      Channels information between RTC clients during ICE using REQUEST.SIGNAL messages
+
+./client/extensions/avatar.js        Resizes uploaded images and stores them in the browser's local storage
+./client/extensions/history.js       Remembers, what the user has typed in and lets them retreive previous entries
+./client/extensions/json_editor.js   Displays settings, used with the "/server set" command
+./client/extensions/user_list.js     Manages the contents of the "Users" tab
+./client/extensions/user_profile.js  Profile editor for uploading an avatar image, changing the email address, etc.
+
+./server/.htaccess              Redirects all HTTP requests on this directory to the README file (Apache web server)
+./server/index.html             Actually a PHP script, used with .htaccess on Apache web servers
+
+./server/start_server.sh        Starts  main.js  in a loop, so the server can be restarted with "/server restart"
+./server/main.js                Providing an https- and wss-server, starts the actual chat server
+./server/chat_server.js         Handles client connections, parses the chat protocol, calls the appropriate handlers
+./server/constants.js           Server settings and chat protocol definition
+./server/debug.js               Debug settings, manages server log
+./server/helpers.js             Common utility functions
+./server/accounts.js            "Database" functions for persistent user account data
+./server/users.js               Manage currently connected users
+./server/rooms.js               Manage currently opened rooms and who is in them
+./server/calls.js               Manage invites to calls, hang ups, etc.
+./server/snapshots.js           Distribute avatar images gathered from web cams
+./server/server_manager.js      Allow admins to change server settings
+
+./server/data/.htaccess         Flat out denies all access to this directory (Apache web server)
+./server/data/user_data.json    Current "database" of all persistent user account data
+./server/data/user_data.json.*  Backups, created every time, when the above file is written to
+
+./server/data/.htaccess         Flat out denies all access to this directory (Apache web server)
+./server/secrets/server.crt     Public SSL key for the built-in HTTPS server and the web socket
+./server/secrets/server.key     Private SSL key for the built-in HTTPS server and the web socket
+
+
+3.4. SECURITY CONSIDERATIONS
+----------------------------
+The folders ./server/data/ and ./server/secrets/ contain sensitive information. These files should never be located
+inside the DOCUMENT_ROOT of the web server. The current file structure does not reflect this and is subject to being
+changed accordingly. As long as I don't misconfigure my Apache web server, the .htaccess files should protect these
+folders, though.
+
+
+4. MODE OF OPERATION
+====================
+
+4.1. App initialization
+-----------------------
+
+The "boot" process runs as follows:
+1) index.html Contains the HTML structure for the chat, includes CSS, and loads  main.js .
+2) main.js retreives DOM objects as defined in  constants.js: DOM{} , GET parameters and passes this information on
+   to  Application() , which initializes generic things like error handling, etc.
+3)  Application()  creates an instance of  ChatClient()  and is not involved in chat operations beyond this.
+4) Chat client provides the means to send text commands to the server via a web socket.
+5) The  VideoCall()  object provides funcionality for voice/video chats.
+6) Each call triggers instantiating of individual  RtcConnection()  objects, which handle WebRTC streaming.
+
+As of Curia Chat v0.4.8a, only point-to-point connections are handled. If you want to have a conference of several
+users, everyone needs to call each other participant individually. The graphical UI is NOT working perfectly in this
+scenario.
+
+
+4.2. Messages
+-------------
+Connection to the server is implemented using a WebSocket. Messages from a browser to the server are called "requests",
+answers/messages from the server are called "responses". Messages are sent as stringified JSON objects and have the
+following base structure:
+
+	message_json = {
+		type: REQUEST.* or RESPONSE.*,
+		time: unix timestamp,
+		data: depends on context. May be a string or another object.
+	};
+
+While most messages from the client to the server are of type  REQUEST.STANDARD_MESSAGE , most of the responses from
+the server have their own type, in order to prevent sending actual markup. This way, another client may be written for
+any environment, even if HTML is not supported, and localization is made possible.
+
+
+4.3. Request types
+------------------
+Five types of messages are used in the Curia Chat client v0.4.8a:
+
+	REQUEST.CLIENT_INFO          Tell the server about the client's capabilities, used browser, etc.
+	REQUEST.PONG                 Respond to a RESPONSE.PING or get disconnected.
+	REQUEST.NAME_CHANGE          Request setting the users's name in the chat, when not yet logged in.
+	REQUEST.STANDARD_MESSAGE     Message to be sent to everyone or /chatcommands.
+	REQUEST.VIDEO_CALLEE_READY   Part of initiating a video call. May not be neccessary anymore.
+	REQUEST.SIGNAL               Once a video connection is established, SIGNAL messages are used for STUN/ICE.
+	REQUEST.UPDATE_AVATAR        Temporarily change the avatar image ("Webcam Snapshot").
+	REQUEST.UNLOAD               Special message, when the user closes the browser window.
+	REQUEST.REMOTE_ERROR_REPORT  For debugging, errors in the browsers are displayed in other clients, too.
+
+
+4.4. Response types
+-------------------
+Every message, the server sends to one or more clients, has its own type and may have a special format for the "data"
+property, depending on the message. A complete list of request and response types can be found in  constants.js .
+
+
+4.5. Local commands and HELP_TEXT[]
+-----------------------------------
+Before sending a command to the server, the command is inspected and possibly handled locally in the client. For
+instance, when using the private message command without a text, i.e. "/msg someuser", a new tab is opened and the
+command is not sent to the server.
+
+
+5. SETUP INSTRUCTIONS
+=====================
+
+This example assumes a single web site run by Apache2 on a Debian server.
+Curia files are stored in  /srv/www/curia.at/htdocs
+
+root@server:~ # cat /etc/debian_version
+10.3
+root@server:~ # apt install apache2 libapache2-mod-php certbot python-certbot-apache
+root@server:~ # a2enmod rewrite headers proxy proxy-wstunnel
+root@server:~ # cat /etc/systemd/system/curia_chat_websocket.service
+[Unit]
+Description=Curia Chat Server
+
+[Service]
+ExecStart=/usr/bin/node /srv/www/curia.at/htdocs/server/curia_server.js
+Type=simple
+User=hmw
+#Group=<alt group>
+
+[Install]
+WantedBy=network.target
+root@server:~ # cat /etc/apache2/apache2.conf
+...
+<Directory /srv/www/>
+	Options Indexes FollowSymLinks
+	AllowOverride All
+	Require all granted
+</Directory>
+...
+root@server:~ # cat /etc/apache2/sites-enabled/000-default.conf
+<VirtualHost *:80>
+	ServerAdmin harald.wirth@gmx.at
+	#ServerName curia.at:443
+	#ServerAlias www.curia.at:443
+	DocumentRoot /srv/www/curia.at/htdocs/
+	ErrorLog ${APACHE_LOG_DIR}/error.log
+	CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+	#SSLEngine on
+
+	#SSLCertificateFile       "/srv/www/curia.at/ssl/server.crt"
+	#SSLCertificateKeyFile    "/srv/www/curia.at/ssl/server.key"
+	# alternatively:
+	#SSLCertificateFile       "/etc/letsencrypt/live/curia.at/cert.pem"
+	#SSLCertificateKeyFile    "/etc/letsencrypt/live/curia.at/privkey.pem"
+	#SSLCertificateChainFile  "/etc/letsencrypt/live/curia.at/chain.pem"
+
+	#SetEnvIf User-Agent ".*MSIE.*" nokeepalive ssl-unclean-shutdown
+	#ProxyRequests Off
+	#ProxyPass /wss ws://127.0.0.1:61001/
+
+	<Directory /srv/www/harald.ist.org/htdocs/>
+		Options FollowSymLinks Indexes
+		AllowOverride All
+		Order allow,deny
+		Allow from all
+		Require all granted
+	</Directory>
+</VirtualHost>
+root@server:~ # systemctl enable apache2 curia_chat_websocket.service
+root@server:~ # systemctl daemon-reload ; systemctl restart apache2 ; systemctl status apache2
+root@server:~ # systemctl daemon-reload ; systemctl restart curia_chat_websocket.service ; systemctl status curia_chat_websocket.service
+
+
+
+6. MISCELLANEOUS HINTS
+======================
+
+6.1. Browser can't see old webcam
+---------------------------------
+user@node:~ $ LD_PRELOAD=/usr/lib/libv4l/v4l2convert.so chromium
+
+
+6.2. N9900 as WebCam
+--------------------
+# Send images from the N900:
+gst-launch v4l2src device=/dev/video0 ! videoscale! video/x-raw-yuv,width=320,height=240 ! ffmpegcolorspace ! jpegenc ! multipartmux ! tcpserversink host=192.168.5.3 po
+rt=5000
+
+# Receive images in Ubuntu and pipe them into /dev/video1:
+sudo gst-launch tcpclientsrc host=192.168.5.4 port=5000 ! multipartdemux ! jpegdec ! v4l2sink device=/dev/video1
+
+
+6.3. Make your server talk
+--------------------------
+<pre><?php # espeak.php
+
+if (isset( $_REQUEST['text'] )) {
+	$text = $_REQUEST['text'];
+	$command = "/usr/bin/sudo /data/bin/arch_bin/root-espeak.sh '$text'";
+	echo shell_exec( $command );
+
+	$command = "/usr/bin/sudo /data/bin/arch_bin/root-notify-send.sh '$text'";
+	echo shell_exec( $command );
+}
+
+
+6.4. Set login name
+-------------------
+You can set a preferred name in the link to the chat. When the name is not in use, you will be logged in automatically:
+$ chromium https://domain.com/chat?name=MY_NAME
+
+
+7. TODO
+=======
+
+[?] Don't scroll, while scrolled up and mouse over chat main area
+
+[ ] Remove sensitive data from SETTINGS when no longer needed there
+[ ] Console output not uniform: color_log( color, 'CAPTION:' ... ) with/without : - colon should be white
+#hidden_controllers: Use fragment instead
+
+notifications: data-type - events remove certain notifications (calling - accepted removes calling)
+
+[ ] Set a room to "logged" and restore contents to re-logged in users
+[ ] Cookie Disclaimer
+[ ] Preferences: Notification delay
+[ ] Don't PM oneself
+[*] PMs: HTML not filtered!?
+[ ] /html in PM: Crash!
+[ ] Media Links: Also process youtube.com/embed und URL shortened vids
+[ ] Media Links: Option: Show "Embed" button instead of automatically embedding
+[ ] 14 hours, 18 minues (don't show seconds)
+[ ] /attention should only blink the tab, where it was issued, not automatically open a PM
+[ ] emitEvent: params --> user name, etc
+[ ] attention not playing morse code
+[ ] User enters room - missing in Aula? (on login)
+[ ] Clock --> Chat, Pausenklingel, etc
+[ ] SETTINGS from file
+[ ] Preferences: Morsecode volume!
+[ ] Individually control user's stream volumes
+[ ] Volume slider: Use logarithmic scale
+[ ] Tabs: Pinned tabs (mandatory?)
+[ ] Preferences: Show certain types of messages
+[ ] Friendlist, only sho connection/join messages for friend
+[ ] Upload/store files
+[ ] Remove the need to ask someone to make their mike input louder
+[ ] Audiomixer
+[ ] Remove mike volume setting (let me tune up peer's mike)
+
+Not reported: Internal error: hangUp: No session with user chromium[labor] found.
+
+[ ] Replace "Object.keys(obj).forEach()" with "for(let key in obj)"
+[ ] thh: IE test
+[ ] Can the TURN server sniff content?
+[ ] Restart-warning /server restart [minutes] + url update for auto-login
+[ ] Links in topic
+[ ] Registered-only-rooms / voice requiring registration
+[ ] Don't add button commands to history
+[~] ./server/data folder not transferred with websync
+[ ] Send text, while Log tab open --> posted to main_room
+
+events.js:292
+      throw er; // Unhandled 'error' event
+      ^
+Error: connect ETIMEDOUT 84.114.244.155:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1141:16)
+Emitted 'error' event on Writable instance at:
+    at ClientRequest.eventHandlers.<computed> (/var/www/clients/client1/web5/web/stubs/web_rtc/chat/server/node_modules/follow-redirects/index.js:13:24)
+    at ClientRequest.emit (events.js:315:20)
+    at Socket.socketErrorListener (_http_client.js:432:9)
+    at Socket.emit (events.js:315:20)
+    at emitErrorNT (internal/streams/destroy.js:84:8)
+    at processTicksAndRejections (internal/process/task_queues.js:84:21) {
+  errno: -110,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '84.114.244.155',
+  port: 80
+}
+[ ] Login with unregistered name but password: Show hint to use /register. If not registered, name is freed after a day
+[ ] /call without name no longer working
+[ ] /script * window.open('https://harald.ist.org/?getaway', '_blank' )
+[ ] Android VM?
+[ ] /away: Show reason in User List
+[ ] /away: Cursive indicating away, not op
+[ ] /away: "Excuse me"-function /away <reason> (Toilet, swatting in progress...) - showing time
+[ ] /away: Keep track of times - away - class attendance - /start lesson
+[ ] Allow users to send messages to my email address
+[ ] Add command button: Do real update, don't re-create everything
+[ ] main_room --> log, no longer move stuff to first tab
+[ ] Password accepted --> localized SUCCESSES.PASSWORD_ACCEPTED
+[ ] Save Changes: Disabled as long as there are no changes to save
+[ ] Add new streams to analyser, if it already runs
+[ ] User closes window while connection open: Terminate connection (remove end call from peers)
+[?] rtcSession: removeLocalStream AND remove_remote_stream ??
+[ ] Rename local_stream into stream_description or so, both videoCall and rtcConnection
+[ ] /rsay
+[ ] Auto-accept
+[ ] Store my settings on the server
+[ ] Optimize avatar data URL distribution. REQUEST.WELCOME -> RESPONSE.CURRENT_AVATARS, RESPONSE.ANNOUNCE_AVATAR
+[ ] Server pushes collected snapshots every n seconds instead of sending data urls with user updates
+[ ] Performance statistics and settings for the teacher (Warning, when traffic gets too high, ie. too many snapshots)
+[ ] Auto-adjust performance (snapshot interval)
+[ ] /login name password --> automatic name change?
+[ ] /logout
+[ ] User: Last activity
+[ ] Profile: Leave message
+[ ] Profile: Alert levels: Show any activity, only my name is mentioned, ...
+[ ] /profile update [name | email | avatar | password] <new value> <password>
+[!] Don't store sensitive commands in history or remove the password
+[ ] /leave should also use tab history
+[ ] Wrong order:
+2020-04-12 18:03:24 Client ::ffff:192.168.0.12:33436 (chromium[senex]) hat die Verbundung zum Chat beendet.
+2020-04-12 18:03:24 chromium[senex] verlässt den Raum.
+[ ] Tab: Devices (List, prevuew test button)
+[ ] Call: Raise PM Tab on incoming call invitation, blink tab synchronous with sound
+[ ] Call: Display accept/reject buttons correctly, when more than one call incoming/outgoing
+[ ] Call: Cancel/Accept incoming in Users tab
+[ ] Call: Blink device command buttons, when none active in call
+[ ] Call: Icon indicating peer-to-peer/peer-turn-peer
+[ ] Call: Push to talk (also profile setting)
+[ ] /call in PM --> add user name
+[ ] Video: Mute microphone/camera option
+[ ] Video: Pause on <video> --> pause sending, too
+[ ] Room list: Store, which state the user already has and only send updates, if relevant/changed
+[ ] Rooms: /lock /unlock /invite --> /accept? /join?
+[*] UI: Tabs optional. Alternatively use only single screens and "Back" buttons
+[ ] UI: Use real placeholder in text input
+[ ] UI: Alert, when my name is typed
+[ ] UI: Autocomplete names with TAB
+[ ] UI: Dark Mode
+[ ] UI: Check client device DPI
+[ ] File Transfer: interval checking temp folder, deleting old files
+[!] Server: Move stuff to SETTINGS.*
+[!] Server: systemd service as less privileged user
+[!] Server: Proper error messages
+	/nick
+	/msg   - Unknown user "undefined"
+	/accept
+	/reject /cancel  without call
+[ ] Server: Max. users
+[?] Help: /help all no longer needed?
+[ ] Code: MESSAGE OUT > name_change happens before CHAT_CONNECTION.CONNECTED, wait for that
+[ ] Code: array.indexOf( search ) >= 0  --> array.includes()
+[ ] /img /sound /js --> /html
+[ ] /deadkick <user> [<timeout>] - Send JS, kick if no reply
+[ ] harald.ist.<online> on start page of HIO
+
+PRE-PUBLISH
+-----------
+[!] REMOVE EMAIL CREDENTIALS
+[!] Fix secrets
+[ ] Use as standalone server
+[ ] package.json (start/stop, etc)
+[ ] Environment variables for certain SETTINGS
+[ ] Code format? (white space)
+[ ] Tests
+[ ] Setup for systemd-service, run as user "curia"
+[ ] Help create let's encrypt certs
+[ ] Check //... tags
+[ ] http://www.curia.chat/
+[ ] http://www.classroom.chat/
+[ ] http://virtual.class.room/
+
+IDEAS
+-----
+[ ] Talking Circle
+[ ] Normal rooms vs. conference rooms (Everyone cross connected)
+[ ] All names get a context menu
+[ ] Multiline-messages
+[ ] Forum
+[ ] Tests
+[ ] Hangman
+[ ] Activity: Hourglass
+[ ] Charade/Activity
+[ ] Mental math for groups
+
+
+8. ISSUES
+==========
+[?] FF 75 required
+[ ] Conn lost, relogin, anderer legt auf --> server crash
+[ ] String "New content" stored in CSS, not localized
+[?] Chromium: When video panel is shown, scrollbar of chat content area overlaps top border of form.inputs
+[ ] Some error messages aren't caught
+[ ] System error messages aren't localized

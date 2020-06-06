@@ -1,0 +1,35 @@
+{
+	"private": "true",
+	"name": "Curia Chat Server",
+	"version": "0.0.1",
+	"description": "https/wss server for the Curia Chat virtual classroom",
+	"keywords": "chat,video,webrtc,classroom",
+	"author": "Harald Markus Wirth",
+	"homepage": "https://harald.ist.org/stubs/web_rtc/chat/",
+	"bugs": {
+		"url": "https://harald.ist.org/stubs/web_rtc/chat/README",
+		"email": "harald.wirth@gmx.at"
+	},
+	"repository": {
+		"type": "git",
+		"url": "github:hwirth/curia_chat",
+		"directory": "server/curia_chat"
+	},
+	"license": "copy(l)eft",
+	"config": {
+		"port": "4334"
+	},
+	"main": "curia_server.js",
+	"scripts": {
+		"start": "node curia_server.js"
+	},
+	"dependencies": {
+		"glob": "^7.1.6",
+		"image-size": "^0.8.3",
+		"nodemailer": "^6.4.6",
+		"re-require-module": "^1.0.2",
+		"read": "^1.0.7",
+		"whois": "^2.12.1"
+	},
+	"os": "linux"
+}

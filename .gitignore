@@ -1,0 +1,6 @@
+.*
+!.gitignore
+npm-debug.log
+server/node_modules/
+server/data/
+server/secrets/

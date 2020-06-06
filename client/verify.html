@@ -1,0 +1,207 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Curia Chat - Account Verification</title>
+<meta name="description" content="WebRTC virtual class room, verification of a new account.">
+<meta name="keywords"    content="account,verification">
+<meta name="author"      content="Harald Markus Wirth, http://harald.ist.org/">
+<meta name="robots"      content="noindex,nofollow">
+<meta name="viewport"    content="width=device-width, initial-scale=1">
+<link rel="help"          href="../README">
+<link rel="shortcut icon" href="../favicon.ico" id="favicon">
+<script>
+
+/**
+ * GET_parameters()
+ */
+function GET_parameters () {
+	const result = {};
+	const query = window.location.href.split( "?" )[1];
+	if (query) query.split("&").forEach( (parameter)=>{
+		const parts = parameter.split( "=" );
+		const param_name = parts[0];
+		result[parts[0]] = parts[1] || null;
+	});
+
+	return result;
+
+} // GET_parameters
+
+
+const SETTINGS = {
+	KNOWN_LANGUAGES: ['en', 'de'],
+};
+
+const LOCALIZED = {
+	'TEMPLATE_MISSING': {
+		en: 'TEMPLATE MISSING',
+		de: 'VORLAGE FEHLT',
+	},
+	'CODE_MISSING': {
+		en: 'No verification code was given in the URL.',
+		de: 'Der URL beinhaltet keinen Verifizierungscode.',
+	},
+	'CODE_BOGUS': {
+		en: 'The given verification code is invalid.',
+		de: 'Der Verifizierungscode ist ungültig.',
+	},
+	'NAME_MISSING': {
+		en: 'Parameter <q>name</q> is missing.',
+		de: 'Parameter <q>Name</q> fehlt.',
+	},
+	'CONNECTING': {
+		en: 'Connecting to the server...',
+		de: 'Verbindung mit dem Server wird aufgebaut...',
+	},
+	'CONNECTED': {
+		en: 'Connection to the server was established.',
+		de: 'Verbindung zum Server wurde hergestellt.',
+	},
+	'CODE_SENT': {
+		en: 'Verification code was sent to the server...',
+		de: 'Der Verifizierungscode wurde an den Server gesandt...',
+	},
+	'REGISTRATION_COMPLETE': {
+		en: 'Registration completed.',
+		de: 'Registrierung abgeschlossen.',
+	},
+	'DISCONNECTED': {
+		en: 'Connection to the server was terminated.',
+		de: 'Die Verbindung zum Server wurde beendet.',
+	},
+	'REGISTER_ERROR': {
+		en: 'The verification failed.<br>Registration probably timed out.',
+		de: 'Die Verifikation ist fehlgeschlagen.<br>Vermutlich ist zuviel Zeit vergangen.',
+	},
+	'ERROR': {
+		en: 'An error occurred while connecting to the server',
+		de: 'Ein Fehler beim Verbindungsaufbau zum Server ist auftegreten.',
+	},
+};
+
+
+/**
+ * localized()
+ */
+var current_language;
+
+function localized (template = null) {
+	if (LOCALIZED[template] == undefined) {
+		template = 'TEMPLATE_MISSING';
+	}
+
+	const text = LOCALIZED[template][current_language];
+
+	return text;
+
+} // localized
+
+
+/**
+ * body.onLoad()
+ */
+addEventListener( 'load', ()=>{
+	const p = document.querySelector( '.noscript p' );
+	const GET = GET_parameters();
+	const lang = GET['lang']   || 'en';
+	const name = GET['name']   || null;
+	const port = GET['port']   || '443';
+	const code = GET['verify'] || null;
+
+	if (SETTINGS.KNOWN_LANGUAGES.indexOf( lang ) >= 0) {
+		current_language = lang;
+	} else {
+		current_language = SETTINGS.KNOWN_LANGUAGES[0];
+	}
+
+	if (code == null) {
+		p.innerHTML = localized( 'CODE_MISSING' );
+		return;
+	}
+
+	if (code.length != 128) {
+		p.innerHTML = localized( 'CODE_BOGUS' );
+		return;
+	}
+
+	if (name == null) {
+		p.innerHTML = localized( 'NAME_MISSING' );
+		return;
+	}
+
+	p.innerHTML = localized( 'CONNECTING' );
+
+
+	self.websocket = new WebSocket( 'wss://' + location.hostname + ':' + port )
+
+	self.websocket.addEventListener( 'open', function (event) {
+		p.innerHTML = localized( 'CONNECTED' );
+
+		const message = {
+			type: 'verify_account',
+			data: {
+				name: decodeURI( name ),
+				code: code,
+			},
+		};
+
+		const json = JSON.stringify( message );
+		self.websocket.send( json );
+
+		p.innerHTML = localized( 'CODE_SENT' );
+	});
+
+	self.websocket.addEventListener( 'message', function (event) {
+		const message = JSON.parse( event.data );
+		console.log( 'INCOMING:', message );
+
+		switch (message.type) {
+		case 'register_complete':
+			p.innerHTML = localized( 'REGISTRATION_COMPLETE' );
+			self.websocket.close();
+			break;
+
+		case 'register_error':
+			p.innerHTML = localized( 'REGISTER_ERROR' );
+			self.websocket.close();
+			break;
+		}
+	});
+
+	self.websocket.addEventListener( 'close', function (event) {
+		//...p.innerHTML += '<br>' + localized( 'DISCONNECTED' );
+	});
+
+	self.websocket.addEventListener( 'error', function (event) {
+		self.websocket.onclose = null;
+		console.log( event );
+		p.innerHTML = localized( 'ERROR' );
+	});
+
+
+
+	addEventListener( 'beforeunload', function (event) {
+		//...send_message( REQUEST.UNLOAD );
+	});
+
+}); // body.onLoad
+
+</script><style>
+* { margin:0; padding:0; box-sizing:border-box; line-height:1.4; }
+html, body { width:100%; height:100%; font-family:sans-serif; background:#123; color:#fff; text-align:center; }
+div.noscript { z-index:800; display:table; position:absolute; top:0; left:0; width:100%; height:100%; }
+.noscript div { display:table-cell; text-align:center; vertical-align:middle; background:#123; color:#fff; }
+.noscript h1 { font-size:2em; margin:0 0 0.1em; color:#135; text-shadow:1px 0 #fa0,-1px 0 #fa0,0 -1px #fa0,0 1px #fa0; }
+.noscript a { color:#4ac; }
+.noscript .error { display:inline-block; text-align:left; font-family:monospace; }
+</style></head><body>
+
+<div class="noscript">
+	<div>
+		<h1>Curia Chat</h1>
+		<p>Please enable JavaScript!</p>
+	</div>
+</div>
+<script class="noscript">document.querySelector("div.noscript p").innerText = "Initializing...";</script>
+
+<h1>Account Verification</h1>
+
+</body></html>

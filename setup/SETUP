@@ -1,0 +1,108 @@
+user@home   $ ssh-copy-id -p <PORT> <USER>@<SERVER>
+user@home   $ scp -P <PORT> data.tar.bz2 <USER>@<SERVER>
+user@home   $ ssh <USER>@<SERVER>
+user@server $ vim .bashrc
+
+	#!/bin/bash
+	HISTCONTROL=ignoreboth
+	HISTSIZE=1000
+	HISTFILESIZE=2000
+	shopt -s histappend
+
+	if ! shopt -oq posix; then
+	  if [ -f /usr/share/bash-completion/bash_completion ]; then
+	    . /usr/share/bash-completion/bash_completion
+	  elif [ -f /etc/bash_completion ]; then
+	    . /etc/bash_completion
+	  fi
+	fi
+
+	PATH=$PATH:~/bin
+
+	export LESS="-XF"
+
+	alias ll="LC_COLLATE=C ls -halpX --group-directories-first"
+	alias ccze="ccze -A -o nolookups"
+	alias www="cd /srv/www/<DOMAIN>/server/ ; ll"
+	alias journal="journalctl --no-pager"
+
+	if [[ $- == *i* ]] ; then
+		. ~/bin/set_prompt.sh
+		vnstat
+	fi
+
+	#. ~/bin/login_defaults.sh
+
+user@server $ vim .vimrc
+
+	set mouse=
+	set noautoindent
+
+user@server $ vim .screenrc
+
+	startup_message off
+	source ~/.screen_layout
+	layout save def
+	multiuser on
+	acladd root
+	acladd <USER>
+	shell -$SHELL
+
+user@server $ ln -s /data/bin bin
+user@server $ su
+root@server # ln -s /data/bin bin
+root@server # cp /home/<USER>/{.vimrc,.bashrc,.screenrc} .
+root@server # mkdir -p /data/{bin,backup/<HOSTNAME>.rbak.1,srv/www/<DOMAIN>/{server,client,secrets,data}}
+root@server # tar -xvzf /home/<USER>/bin.tar.bz2 -C /data
+root@server # rm /home/<USER>/bin.tar.bz2
+root@server # vim /etc/ssh/sshd_config
+
+	Port <NEW_PORT>
+	PermitRootLogin yes
+
+root@server # systemctl restart sshd
+root@server # logout
+user@home   $ ssh-copy-id -p <NEW_PORT> root@<SERVER>
+user@home   $ ssh -p <NEW_PORT> root@<SERVER>
+root@server # vim /etc/ssh/sshd_config
+
+	PermitRootLogin prohibit-password
+
+root@server # systemctl restart sshd
+root@server # echo "<HOSTNAME>" > /etc/hostname
+root@server # reboot
+user@home   $ ssh -p <NEW_PORT> root@<SERVER>
+root@server # apt update ; apt-upgrade
+root@server # apt install             \
+	figlet                        \
+	sudo vim mc screen ccze       \
+	rsync notify-tools moreutils  \
+	speedometer vnstat            \
+	git nodejs npm certbot coturn \
+	;
+root@server # figlet curia > /etc/motd
+root@server # vim /etc/motd
+
+
+	      Welcome on  _
+	   ___ _   _ _ __(_) __ _
+	  / __| | | | '__| |/ _` |
+	 | (__| |_| | |  | | (_| |
+	  \___|\__,_|_|  |_|\__,_|
+
+
+root@server # vim /etc/vnstat.conf
+
+	Interface "enp0s20"
+
+root@server # systemctl restart vnstat
+root@server # visudo
+
+	<USER>  ALL=(ALL:ALL) NOPASSWD: ALL
+	<USER>  ALL=(root) NOPASSWD: /path/to/script
+
+root@server #
+
+
+
+ufw

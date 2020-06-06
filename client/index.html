@@ -1,0 +1,376 @@
+<?php # chatclient
+  $PAGE_TITLE       = "Curia Chat";
+  $META_DESCRIPTION = "Voice and video chat";
+  $META_KEYWORDS    = "webrtc,voip,chat";
+?>
+<?php
+	$enable_tts = !true || isset($_REQUEST['tts']);
+?>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Curia Chat</title>
+<meta name="description" content="WebRTC virtual class room, designed for being easy to use.">
+<meta name="keywords"    content="webrtc,chat,voip,video call,conference,class room,teacher,simple">
+<meta name="author"      content="Harald Markus Wirth, http://harald.ist.org/">
+<meta name="robots"      content="index,nofollow">
+<meta name="viewport"    content="width=device-width, initial-scale=1">
+<link rel="help"          href="../README">
+<link rel="shortcut icon" href="../favicon.ico" id="favicon">
+<link rel="stylesheet"    href="main.css">
+<link rel="stylesheet"    href="rpg/rpg.css">
+<script type="module" src="main.js"></script>
+<?php IF ($enable_tts): ?>
+<script id="responsive_voice" src="https://code.responsivevoice.org/responsivevoice.js?key=2lLVpRAU"></script>
+<?php ENDIF ?>
+<style id="dynamic_styles"></style>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; line-height:1.4; }
+html, body { width:100%; height:100%; font-family:sans-serif; background:#123; color:#fff; text-align:center; }
+div.noscript { z-index:800; display:table; position:absolute; top:0; left:0; width:100%; height:100%; }
+.noscript div { display:table-cell; text-align:center; vertical-align:middle; background:#123; color:#fff; }
+.noscript h1 { font-size:2em; margin:0 0 0.1em; color:#135; text-shadow:1px 0 #fa0,-1px 0 #fa0,0 -1px #fa0,0 1px #fa0; }
+.noscript a { color:#4ac; }
+.noscript .error { display:inline-block; text-align:left; font-family:monospace; }
+</style></head><body>
+
+<div class="noscript">
+	<div>
+		<h1>Curia Chat</h1>
+		<p>Please enable JavaScript!</p>
+	</div>
+</div>
+<script class="noscript">document.querySelector("div.noscript p").innerText = "Initializing...";</script>
+
+<div id="rpg" class="hidden">
+	<div class="paperdoll">
+		<img src="rpg/images/avatars/avatar_m3.png">
+	</div>
+	<div>
+		<h1>Ulrich Klutz</h2>
+		<h2>Master Procrastinator</h2>
+	</div>
+</div>
+
+<div id="videos" class="hidden collapsed">
+	<div class="bottom vertical resizer" data-collapse="50"></div>
+</div>
+
+<div id="tabs"></div>
+<div id="pages">
+	<img class="welcome" src="images/curia.png" width="32" height="32" alt="Logo">
+	<h1 id="title"></h1>
+	<ul id="notifications" class="no_page"></ul>
+</div>
+
+<form id="login" accept-charset="utf8">
+	<label for="login_name">Choose a name:</label>
+	<span>
+		<input type="text" id="login_name" placeholder="Nickname">
+		<input type="password" id="login_password" placeholder="Password (optional)">
+		<button>Start</button>
+	</span>
+</form>
+
+<form id="inputs" class="hidden" accept-charset="utf8">
+	<input id="text" type="text" autocomplete="off">
+	<button id="send">Send</button>
+</form>
+
+<div id="commands" class="hidden collapsed">
+	<div class="top vertical resizer" data-invert-y="true"></div>
+</div>
+
+<div id="status"></div>
+
+<div id="hidden_content">
+	<ul id="user_list" data-hide-input="true" data-auto-scroll="false"></ul>
+
+	<div id="preferences" class="form" data-hide-input="true" data-auto-scroll="false">
+		<ul class="menu">
+			<li><button id="btnPreferencesEdit"   data-show="edit"  >Preferences</button>
+			<li><button id="btnPreferencesEvents" data-show="events">Events</button>
+		</ul>
+
+		<form id="preferences_edit">
+			<hr class="fullwidth">
+			<p>
+				<label for="rngMasterVolume">Master Volume</label>
+				<input  id="rngMasterVolume" type="range" min="0" max="1" step="any" value="0.5"
+					data-default-value="0.5"
+				>
+			</p>
+			<p>
+				<label for="rngNotificationTimeout">Notification Timeout</label>
+				<input  id="rngNotificationTimeout" type="range" min="0" max="1" step="any" value="0.5"
+					data-default-value="0.5"
+				>
+			</p>
+			<p>
+				<label for="cbxAutoEmbed">Embed Media Links</label>
+				<input  id="cbxAutoEmbed" type="checkbox">
+			</p>
+			<hr class="fullwidth">
+			<p>
+				<label for="cbxSystemLog">Show system log</label>
+				<input  id="cbxSystemLog" type="checkbox">
+			</p>
+			<p>
+				<label for="cbxRemoteErrors">Show remote errors</label>
+				<input  id="cbxRemoteErrors" type="checkbox">
+			</p>
+			<hr class="fullwidth">
+			<p class="fullwidth last">
+				<button id="submitPreferencesEdit" type="submit">Save Changes</button>
+			</p>
+		</form>
+
+		<form id="preferences_events">
+			<table class="preferences fullwidth"></table>
+			<p class="fullwidth last">
+				<button id="submitPreferencesEvents" type="submit">Save Changes</button>
+			</p>
+		</form>
+	</div>
+
+	<div id="profile" class="form" data-hide-input="true" data-auto-scroll="false">
+		<ul class="menu">
+			<li><button id="btnProfileAvatar"   data-show="avatar"  >Avatar</button>
+			<li><button id="btnProfileEdit"     data-show="edit"    >Profile</button>
+			<li><button id="btnProfileRegister" data-show="register">Register</button>
+		</ul>
+
+		<form id="profile_avatar">
+			<hr class="fullwidth">
+			<p class="avatar">
+				<img id="imgProfileAvatar" class="avatar">
+			</p>
+			<p>
+				<span class="custom_file_upload">
+					<input id="fileProfileAvatar" type="file">
+					<span>No file selected</span>
+				</span>
+			</p>
+			<p>
+				<button id="btnAvatarClear" type="button">Clear Image</button>
+				<button id="btnAvatarRestore" type="button">Restore Image</button>
+			</p>
+			<p class="new_image_only">
+				<button id="btnAvatarZoomFill" type="button">Fill Picture</button>
+				<button id="btnAvatarZoomFull" type="button">Whole Image</button>
+			</p>
+			<p class="new_image_only">
+				<label for="rngAvatarZoom">Size</label>
+				<input type="range" id="rngAvatarZoom" min="0" max="2" step="any" value="1"
+					data-default="1"
+				>
+			</p>
+			<p class="new_image_only">
+				<label for="rngAvatarOffsetY">Vertical</label>
+				<input type="range" id="rngAvatarOffsetY" min="-1" max="1" step="any" value="0"
+					data-default="0"
+				>
+			</p>
+			<p class="new_image_only">
+				<label for="rngAvatarOffsetX">Horizontal</label>
+				<input type="range" id="rngAvatarOffsetX" min="-1" max="1" step="any" value="0"
+					data-default="0"
+				>
+			</p>
+			<p class="new_image_only">
+				<label for="colorAvatarBg">Background</label>
+				<input id="colorAvatarBg" type="color">
+			</p>
+			<hr class="fullwidth">
+			<p class="fullwidth last">
+				<button id="submitProfileAvatar" type="submit">Save Changes</button>
+			</p>
+		</form>
+
+		<form id="profile_edit">
+			<hr class="fullwidth">
+			<p class="fullwidth">Not implemented yet</p>
+			<hr class="fullwidth">
+			<table class="preferences fullwidth"></table>
+			<p class="fullwidth last disabled">
+				<button id="submitProfileEdit" type="submit">Save Changes</button>
+			</p>
+		</form>
+
+		<form id="profile_register">
+			<hr class="fullwidth">
+			<p>
+				<label for="txtRegisterName">Name</label>
+				<input id="txtRegisterName" type="text">
+			</p>
+			<p>
+				<label for="spanRegisterAvailable">Available</label>
+				<span id="spanRegisterAvailable"></span>
+			</p>
+			<p class="register pending">
+				<label for="txtRegisterVerify">Verification Code</label>
+				<textarea id="txtRegisterVerify" rows="8"></textarea>
+			</p>
+			<p class="register pending">
+				<button id="btnRegisterVerify">Verify Account</button>
+			</p>
+			<hr class="register available fullwidth">
+			<p class="register available">
+				<label for="pwdRegisterPassword1">Password</label>
+				<input id="pwdRegisterPassword1" type="password">
+			</p>
+			<p class="register available">
+				<label for="pwdRegisterPassword2">Confirm</label>
+				<input id="pwdRegisterPassword2" type="password">
+			</p>
+			<p class="register available">
+				<label for="spanRegisterStrength">Strength</label>
+				<span id="spanRegisterStrength"></span>
+			</p>
+			<hr class="register available fullwidth">
+			<p class="register available">
+				<label for="txtRegisterEmail">Email address</label>
+				<input id="txtRegisterEmail" type="text">
+			</p>
+			<p class="register available">
+				<span id="spanRegisterEmailHint">
+					You will be sent an activation link,
+					<br>
+					make sure to enter a valid address.
+				</span>
+			</p>
+			<hr class="register available fullwidth">
+			<p class="register available fullwidth last">
+				<button id="submitRegisterAccount">Register</button>
+			</p>
+		</form>
+	</div>
+
+	<div Xid="errors" data-hide-input="false" data-auto-scroll="true"></div>
+	<div Xid="log" data-hide-input="false" data-auto-scroll="true"></div>
+	<div id="manual" data-hide-input="true" data-auto-scroll="false"></div>
+</div>
+
+<div id="audio_analyser" class="minimized hidden floating_window">
+	<div class="screen"></div>
+	<p>
+		<label>Time</label>
+		<input class="knob_input Time">
+		<span class="knob"
+			data-min="0"
+			data-max="1"
+			data-step-coarse="0.01"
+			data-step-fine="0.0001"
+			data-default-value="0.75"
+		></span>
+	</p>
+	<p>
+		<label>Amplitude</label>
+		<input class="knob_input Amplitude">
+		<span class="knob"
+			data-min="0"
+			data-max="10"
+			data-step-coarse="0.01"
+			data-step-fine="0.0001"
+			data-default-value="1"
+		></span>
+	</p>
+	<p>
+		<label>Brightness</label>
+		<input class="knob_input Brightness">
+		<span class="knob"
+			data-min="0"
+			data-max="1"
+			data-step-coarse="0.01"
+			data-step-fine="0.0001"
+			data-default-value="1"
+		></span>
+	</p>
+	<p>
+		<label>Blur</label>
+		<input class="knob_input Blur">
+		<span class="knob"
+			data-min="0"
+			data-max="0.999"
+			data-step-coarse="0.01"
+			data-step-fine="0.0001"
+			data-default-value="0.85"
+		></span>
+	</p>
+	<p>
+		<label>Trigger</label>
+		<select class="Trigger">
+			<option value="off">Off</option>
+			<option value="Peak">Peak</option>
+			<option value="Zero">Zero</option>
+		</select>
+	</p>
+	<p>
+		<label>Mode</label>
+		<select class="Mode">
+			<option value="Left+Right">Left+Right</option>
+			<option value="Left">Left</option>
+			<option value="Right">Right</option>
+			<option value="Spectrum">Spectrum</option>
+			<option value="X/Y">X/Y</option>
+		</select>
+	</p>
+	<p>
+		<label>Stereo</label>
+		<input class="Stereo" type="checkbox">
+	</p>
+	<p>
+		<label>fftSize</label>
+		<select class="fftSize">
+			<option value="32">32</option>
+			<option value="64">64</option>
+			<option value="128">128</option>
+			<option value="256">256</option>
+			<option value="512">512</option>
+			<option value="1024">1024</option>
+			<option value="2048" selected>2048</option>
+			<option value="4096">4096</option>
+			<option value="8192">8192</option>
+			<option value="16384">16384</option>
+			<option value="32768">32768</option>
+		</select>
+	</p>
+	<p>
+		<label>FreqBin Count</label>
+		<input class="frequencyBinCount" type="text" data-type="input_int" disabled="true">
+	</p>
+	<p>
+		<label>min. dB</label>
+		<input class="knob_input minDecibels" type="text">
+		<span class="knob"
+			data-min="-100"
+			data-max="0"
+			data-step-coarse="1"
+			data-step-fine="0.1"
+			data-default-value="-100"
+		></span>
+	</p>
+	<p>
+		<label>max. dB</label>
+		<input class="knob_input maxDecibels" type="text">
+		<span class="knob"
+			data-min="-100"
+			data-max="0"
+			data-step-coarse="1"
+			data-step-fine="0.1"
+			data-default-value="-30"
+		></span>
+	</p>
+	<p>
+		<label>Smoothing</label>
+		<input class="knob_input smoothingTimeConstant" type="text">
+		<span class="knob"
+			data-min="0" data-max="0"
+			data-step-coarse="1"
+			data-step-fine="0.1"
+			data-default-value="0"
+		></span>
+	</p>
+</div>
+
+<div id="hidden_controllers"></div>
+
+</body></html>
