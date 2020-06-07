@@ -119,7 +119,7 @@ fi
 ##################################################################################################################119:#
 
 ##################################################################################################################119:#
-# STEPS - Manage step wise execution of the installation procedure
+# STEPS - Manage stepwise execution of the installation procedure
 ##################################################################################################################119:#
 
 function list_steps () {
@@ -393,13 +393,16 @@ fi
 #
 case $action in
 	1)
+		#
+		# Show help, when called without parameters
+		#
 		echo "Check the values above and adjust the variables in this script as needed."
 		echo
 		echo "Then call"
 		echo "  $script_name 2          to continue with the next step (when on your local computer)"
 		echo
 		echo "If you are already logged in on your server (not as root!):"
-		echo "  $script_name 4          to continue with the next step (when logged in to your server)"
+		echo "  $script_name 4          to start the installation"
 		echo
 		echo "Alternatively,"
 		echo "  $script_name <number>   to execute a specific step at your will"
@@ -409,18 +412,38 @@ case $action in
 		;;
 
 	2)
-		echo "Confirm commands by pressing Return or press CTRL+C to abort."
+		#
+		# When started from the local machine, copy this script over to the server
+		#
 		confirm "scp -P $port $0 $user@$server:~"
 		;;
 	3)
-		confirm "ssh -t -p $port $user@$server \"echo -e '\\n\${blue}You are now logged in to $server\${normal}\\n'; ./$script_name 4\""
+		#
+		# Log in to the server and call step 4.
+		#
+		hint="${blue}You are now logged in to $server\${normal}"
+		confirm "ssh -t -p $port $user@$server \"echo -e '\\n\$hint\\n'; ./$script_name 4\""
+
+		#
+		# Once install is done, we return from the server and exit the installer.
+		#
 		exit
 		;;
 	4)
+		#
+		# Become root, move script to /root, invoke step 5.
+		#
 		confirm "su -c \"mv $script_name ~; cd; ./$script_name 5\""
+
+		#
+		# Once done, leave the ssh session on the server and exit through step 3.
+		#
 		exit
 		;;
 	5)
+		#
+		# From here on, we stay root on the server and let the script call itself again after each step
+		#
 		confirm "apt update && apt upgrade"
 		;;
 	6)
@@ -430,6 +453,7 @@ case $action in
 		answer=""
 		while [ "$answer" != 'y' ] ; do
 			echo -e "Press enter to keep the values:"
+
 			input "server user ($blue$CURIA_USER$normal): " "$CURIA_USER"
 			new_curia_user=$input_text
 
@@ -448,9 +472,6 @@ case $action in
 			input "TURN port ($blue$TURN_PORT$normal): " "$TURN_PORT"
 			new_turn_port=$input_text
 
-			input "TURN user password ($blue$TURN_USER_PASSWORD$normal): " "$TURN_USER_PASSWORD"
-			new_turn_user_password=$input_text
-
 			input "Curia email address ($blue$EMAIL_SENDER_NAME$normal): " "$EMAIL_SENDER_NAME"
 			new_email_sender_name=$input_text
 
@@ -467,14 +488,13 @@ case $action in
 			new_smtp_pass=$input_text
 
 			echo
-			echo "You chose the following settings:"
+			echo "You have chosen the following settings:"
 			echo "  Server user:      $new_curia_user"
 			echo "  Server group:     $new_curia_group"
 			echo "  Curia directory:  $new_curia_root"
 			echo "  Curia domain:     $new_curia_domain"
 			echo "  HTTPS port:       $new_https_port"
 			echo "  TURN port:        $new_turn_port"
-			echo "  TURN user passwd: $new_turn_user_password"
 			echo "  Curia email:      $new_email_sender_name"
 			echo "  SMTP host:        $new_smtp_host"
 			echo "  SMTP port:        $new_smtp_port"
@@ -494,7 +514,6 @@ case $action in
 		CURIA_DOMAIN=$new_curia_domain
 		HTTPS_PORT=$new_https_port
 		TURN_PORT=$new_turn_port
-		TURN_USER_PASSWORD=$new_turn_user_password
 		EMAIL_SENDER_NAME=$new_email_sender_name
 		SMTP_HOST=$new_smtp_host
 		SMTP_PORT=$new_smtp_port
@@ -559,6 +578,10 @@ case $action in
 	19)
 		confirm "rm $script_name"
 		echo "Setup is complete. Log in to the chat at https://${CURIA_DOMAIN}/"
+
+		#
+		# Exit script backwards through steps 4, 3, ending at the user's local machine.
+		#
 		exit
 		;;
 	*)
