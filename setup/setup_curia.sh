@@ -377,12 +377,14 @@ fi
 #
 # If the file already exists, import settings from  /etc/curia_chat.conf
 #
-if [ -f $curia_config_file ] ; then
-	while read -r key value; do
-		[[ $key == \#* ]] && continue;
-		[[ $key == '' ]] && continue;
-		export "$key=$value"
-	done < $curia_config_file
+if [ "$(whoami)" == "root" ] ; then
+	if [ -f $curia_config_file ] ; then
+		while read -r key value; do
+			[[ $key == \#* ]] && continue;
+			[[ $key == '' ]] && continue;
+			export "$key=$value"
+		done < $curia_config_file
+	fi
 fi
 
 #
