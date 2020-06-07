@@ -132,7 +132,7 @@ function list_steps () {
 }
 
 function next_step () {
-	./$script_name $(($action + 1))
+	./"$script_name" $(($action + 1))
 	exit;
 }
 
@@ -148,7 +148,7 @@ function confirm () {
 		prompt=$green
 	fi
 
-	prompt="${prompt}$(whoami)@$(hostname)${normal}"
+	prompt="$prompt$(whoami)@$hostname$normal"
 
 	if [ "$(whoami)" == "root" ] ; then
 		prompt="$prompt # "
@@ -156,17 +156,16 @@ function confirm () {
 		prompt="$prompt \$ "
 	fi
 
-	command=$1
-
+	command="$1"
 
 	answer=""
 	while [ "$answer" != "y" ] && [ "$answer" != "n" ] ; do
-		echo -en "${yellow}> ${prompt}${yellow}${command}${normal} (y/n=skip) "
+		echo -en "$yellow> $prompt$yellow$command$normal (y/n=skip) "
 		read answer
 	done
 
 	if [ "$answer" == "y" ] ; then
-		eval $command
+		eval "$command"
 
 		error_code=$?
 		if [ "$error_code" != "0" ] ; then
@@ -184,7 +183,7 @@ function input () {
 	echo -en "$1"
 	read input_text
 
-	[ "$input_text" == "" ] && input_text=$2
+	[ "$input_text" == "" ] && input_text="$2"
 
 	export input_text
 }
@@ -197,7 +196,7 @@ function input () {
 function cat_highlighted () {
 	echo "Contents of $1:"
 	echo -en $blue
-	cat $1
+	cat "$1"
 	echo -en $normal
 }
 
@@ -214,7 +213,7 @@ function cat_highlighted () {
 ##################################################################################################################119:#
 
 function create_curia_config_file () {
-	cat << EOF > $1
+	cat << EOF > "$1"
 # $1
 ##################################################################################################################119:#
 # CURIA CHAT CONFIGURATION
@@ -262,12 +261,12 @@ EOF
 ##################################################################################################################119:#
 
 function create_client_config_json () {
-	cat << EOF > $1
+	cat << EOF > "$1"
 {
 	"webSocketPort": ${HTTPS_PORT}
 }
 EOF
-	chown $CURIA_USER:$CURIA_GROUP $1
+	chown $CURIA_USER:$CURIA_GROUP "$"
 }
 
 
@@ -276,7 +275,7 @@ EOF
 ##################################################################################################################119:#
 
 function create_systemd_service_file () {
-	cat << EOF > $1
+	cat << EOF > "$1"
 [Unit]
 Description=Curia Chat Server
 
@@ -295,9 +294,9 @@ EOF
 ##################################################################################################################119:#
 
 function create_coturn_config_file () {
-	mv $1 $1.ORIG
+	mv "$1" "$1.ORIG"
 
-	cat << EOF >> $1
+	cat << EOF >> "$1"
 listening-port=${TURN_PORT}
 #tls-listening-port=${TURN_PORT}
 fingerprint
@@ -320,7 +319,7 @@ EOF
 ##################################################################################################################119:#
 
 function create_coturn_default_file () {
-	cat << EOF > $1
+	cat << EOF > "$1"
 TURNSERVER_ENABLED=1
 EOF
 }
@@ -333,7 +332,7 @@ EOF
 ##################################################################################################################119:#
 
 current_host=$(hostname)
-script_name=$(basename $0)
+script_name=$(basename "$0")
 
 #
 # Find out, which step to execute
@@ -523,7 +522,7 @@ case $action in
 		confirm "create_curia_config_file $curia_config_file"
 		cat_highlighted "$curia_config_file"
 
-		confirm "create_coturn_config_file /etc/turnserver.conf"
+		confirm "create_coturn_config_file $coturn_config_file"
 		cat_highlighted "/etc/turnserver.conf"
 
 		confirm "create_coturn_default_file $coturn_default_file"
@@ -585,7 +584,7 @@ case $action in
 		exit
 		;;
 	*)
-		echo "Unknown option: $@"
+		echo "Unknown option: $*"
 		exit
 esac
 
