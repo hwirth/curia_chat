@@ -54,7 +54,7 @@ coturn_default_file=/etc/default/coturn
 #
 curia_service_name=curia_chat.service
 curia_log_dir=/var/log/curia
-curia_repository=https://github.com/hwirth/curia_chat/
+curia_repository=https://github.com/hwirth/curia_chat
 
 #
 # /etc/curia_chat.conf settings
@@ -86,8 +86,8 @@ actions=(
 	"Install required packages"\
 	"Create configuration files"\
 	"Create coturn user"\
+	"Create curia server user"\
 	"Create directory structure"\
-	"Create user for curia server"\
 	"Create letsencrypt SSL keys"\
 	"Upgrade npm"\
 	"Clone Curia GIT repository"\
@@ -96,6 +96,7 @@ actions=(
 	"Start server for the first time (Create admin account)"\
 	"Create systemd service file"\
 	"Enable and start systemd services"\
+	"Clean up"\
 	"Done!"\
 )
 
@@ -405,26 +406,26 @@ case $action in
 		echo "  $script_name <number>   to execute a specific step at your will"
 		echo
 		list_steps
+		exit
 		;;
 
 	2)
 		echo "Confirm commands by pressing Return or press CTRL+C to abort."
 		confirm "scp -P $port $0 $user@$server:~"
-		next_step
 		;;
 	3)
 		confirm "ssh -t -p $port $user@$server \"echo -e '\\n\${blue}You are now logged in to $server\${normal}\\n'; ./$script_name 4\""
+		exit
 		;;
 	4)
-		confirm "su -c \"cp $script_name ~; cd; ./$script_name 5\""
+		confirm "su -c \"mv $script_name ~; cd; ./$script_name 5\""
+		exit
 		;;
 	5)
 		confirm "apt update && apt upgrade"
-		next_step
 		;;
 	6)
 		confirm "apt install git nodejs npm certbot coturn"
-		next_step
 		;;
 	7)
 		answer=""
@@ -509,54 +510,46 @@ case $action in
 
 		confirm "create_coturn_default_file $coturn_default_file"
 		cat_highlighted $coturn_default_file
-
-		next_step
 		;;
 	8)
 		confirm "turnadmin -a -u curia -r ${CURIA_DOMAIN} -p ${TURN_USER_PASSWORD}"
-		next_step
 		;;
 	9)
-		confirm "mkdir -p $CURIA_ROOT; chown $CURIA_USER:$CURIA_GROUP $CURIA_ROOT"
-		confirm "mkdir -p $curia_log_dir; chown $CURIA_USER:$CURIA_GROUP $curia_log_dir"
-		next_step
+		confirm "addgroup curia"
+		confirm "adduser --system --shell=/bin/sh --disabled-password --home=$CURIA_ROOT --no-create-home --ingroup $CURIA_GROUP $CURIA_USER"
+		#confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
+		#confirm "adduser --no-create-home --disabled-password --disabled-login $CURIA_USER"
+		#confirm "adduser --system --no-create-home --group $CURIA_USER"
 		;;
 	10)
-		confirm "adduser --no-create-home --disabled-password --disabled-login $CURIA_USER"
-		#confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
-		next_step
+		confirm "mkdir -p $curia_log_dir; chown $CURIA_USER:$CURIA_GROUP $curia_log_dir"
 		;;
 	11)
 		#confirm "certbot certonly --dry-run --standalone --preferred-challenges http -d $CURIA_DOMAIN"
 		confirm "certbot certonly --standalone --preferred-challenges http -d $CURIA_DOMAIN"
-		next_step
 		;;
 	12)
 		confirm "npm install npm@latest -g"
-		next_step
 		;;
 	13)
-		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone $curia_repository; mv curia_chat/* .; rm -rf curia_chat\""
-		next_step
+		#confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone $curia_repository; mv curia_chat/* .; rm -rf curia_chat\""
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone $curia_repository .\""
 		;;
 	14)
 		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; npm install\""
-		next_step
 		;;
 	15)
 		confirm "create_client_config_json ${CURIA_ROOT}/client/config.json"
 		cat_highlighted "${CURIA_ROOT}/client/config.json"
 		;;
-	15)
-		confirm "cd $CURIA_ROOT/server; node main.js --first-run"
-		next_step
-		;;
 	16)
-		confirm "create_systemd_service_file /etc/systemd/system/$curia_service_name"
-		cat_highlighted /etc/systemd/system/$curia_service_name
-		next_step
+		confirm "cd $CURIA_ROOT/server; node main.js --first-run"
 		;;
 	17)
+		confirm "create_systemd_service_file /etc/systemd/system/$curia_service_name"
+		cat_highlighted /etc/systemd/system/$curia_service_name
+		;;
+	18)
 		confirm "systemctl enable coturn"
 		confirm "systemctl enable $curia_service_name"
 		confirm "systemctl start coturn"
@@ -565,12 +558,19 @@ case $action in
 		confirm "systemctl status $curia_service_name"
 		next_step
 		;;
-	18)
+	19)
+		confirm "rm $script_name"
+		;;
+	20)
 		# Done!
+		exit
 		;;
 	*)
 		echo "Unknown option: $@"
+		exit
 esac
+
+next_step
 
 
 #EOF
