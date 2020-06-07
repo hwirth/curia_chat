@@ -80,7 +80,7 @@ const SETTINGS = {
 		MAX_DEPTH     : ((DEV_SERVER) ? 3 : 3),                   // null or int, objects log detail
 	},
 
-	ALLOWED_URI_CHARS  : 'abcdefghijklmnopqrstuvwxyz0123456789_.?&%=-+/:',    // http server white list
+	ALLOWED_URI_CHARS  : 'abcdefghijklmnopqrstuvwxyz0123456789_.?&%=-+/:[]',    // http server white list
 	ALLOWED_NAME_CHARS : 'abcdefghijklmnopqrstuvwxyz1234567890_[]()@-/äöüß',  // Chat name white list
 
 	PING_TIMEOUT: 2000,   // How long clients have to react to a RESPONSE.PING
@@ -221,7 +221,6 @@ const TURN_OPTIONS = {
 	LEASE_TIME         : config_file.TURN_LEASE_TIME,
 	ALGORITHM          : config_file.TURN_ALGORITHM,
 	USER_NAME          : config_file.TURN_USER_NAME,
-	SECRET_KEY         : config_file.TURN_SECRET_KEY,
 	STATIC_AUTH_SECRET : config_file.TURN_STATIC_SECRET,
 
 }; // TURN_OPTIONS

@@ -4,12 +4,12 @@
 # This file is meant to be started as a service.
 ##################################################################################################################119:#
 
-path=$(dirname $0)
+cd $(dirname $0)
 
 nr_crashes=0
 
 while [ 1 ] ; do
-	node $path/main.js
+	node main.js
 	case $? in
 	2|3|4)
 		# Conditions that need this loop to end

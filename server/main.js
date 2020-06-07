@@ -122,6 +122,9 @@ async function init () {
 			return;
 		}
 
+		const pos = (request_url_clean + '?').indexOf( '?' );
+		request_url_clean = request_url_clean.substr( 0, pos );
+
 		const file_name
 		= SETTINGS.SERVER.DOCUMENT_ROOT
 		+ ((request_url_clean == '/') ? '/index.html' : request_url_clean)

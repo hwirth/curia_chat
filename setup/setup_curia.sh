@@ -27,6 +27,8 @@ curia_root="/srv/curia"
 curia_domain=YOUR.DOMAIN.COM
 https_port=443
 turn_port=8001
+turn_user_password=$(openssl rand -hex 32)
+turn_static_secret=CHANGE_ME
 curia_email=CURIA@MAILPROVIDER.COM
 smtp_host=SMTP.MAILPROVIDER.COM
 smtp_port=587
@@ -42,6 +44,7 @@ actions=(
 	"Update the server's operating system"\
 	"Install required packages"\
 	"Create $config_file_name"\
+	"Create coturn user"\
 	"Create directory struction"\
 	"Create user for curia server"\
 	"Create letsencrypt SSL keys"\
@@ -49,6 +52,8 @@ actions=(
 	"Clone Curia GIT repository"\
 	"Install node modules"\
 	"Start server for the first time"\
+	"Create systemd service file"\
+	"Enable systemd service"\
 )
 
 if [ "$use_ansi_colors" == "true" ] ; then
@@ -162,8 +167,8 @@ TURN_SERVER_PORT	${turn_port}
 TURN_LEASE_TIME		3600
 TURN_ALGORITHM		sha1
 TURN_USER_NAME		curia
-TURN_SECRET_KEY		0x00000000000000000000000000000000
-TURN_STATIC_SECRET	MY_STATIC_SECRET
+TURN_USER_PASSWORD	${turn_user_password}
+TURN_STATIC_SECRET	${turn_static_secret}
 
 EMAIL_SENDER_NAME	${curia_email}
 EMAIL_SMTP_HOST		${smtp_host}
@@ -178,6 +183,53 @@ NOTIFY_OWNER_PATH	/NOTIFY_ME.php
 
 #EOF
 EOF
+}
+
+
+##################################################################################################################119:#
+# CREATE SYSTEMD SERCVICE FILE
+##################################################################################################################119:#
+
+function create_systemd_service_file () {
+	cat << EOF > /etc/systemd/system/curia_chat.service
+[Unit]
+Description=Curia Chat Server
+
+[Service]
+ExecStart=${CURIA_ROOT}/server/start_server.sh
+Type=simple
+
+[Install]
+WantedBy=network.target
+EOF
+}
+
+
+##################################################################################################################119:#
+# CREATE COTURN CONFIG FILE
+##################################################################################################################119:#
+
+function create_coturn_config_file () {
+	mv /etc/coturn.conf /etc/coturn.conf.ORIG
+
+	cat << EOF >> /etc/coturn.conf
+#listening-port=${TURN_PORT}
+tls-listening-port=${TURN_PORT}
+fingerprint
+use-auth-secret
+static-auth-secret=${TURN_STATIC_SECRET}
+cert=${SSL_PUBLIC_KEY_FILE}
+pkey=${SSL_PRIVATE_KEY_FILE}
+#total-quota=100
+#stale-nonce=600
+server-name=${CURIA_DOMAIN}
+realm=${CURIA_DOMAIN}
+proc-user=turnserver
+proc-group=turnserver
+EOF
+
+	cat << EOF >> /etc/defaults/coturn
+TURNSERVER_ENABLED=1
 }
 
 
@@ -307,6 +359,9 @@ case $action in
 			input "TURN port ($color_blue$turn_port$color_normal): " "$turn_port"
 			new_turn_port=$input_text
 
+			input "TURN user password ($color_blue$turn_user_password$color_normal): " "$turn_user_password"
+			new_turn_user_password=$input_text
+
 			input "Curia email address ($color_blue$curia_email$color_normal): " "$curia_email"
 			new_email=$input_text
 
@@ -330,6 +385,7 @@ case $action in
 			echo "  Curia domain:     $new_curia_domain"
 			echo "  HTTPS port:       $new_https_port"
 			echo "  TURN port:        $new_turn_port"
+			echo "  TURN user passwd: $new_turn_user_password"
 			echo "  Curia email:      $new_email"
 			echo "  SMTP host:        $new_smtp_host"
 			echo "  SMTP port:        $new_smtp_port"
@@ -349,6 +405,7 @@ case $action in
 		curia_domain=$new_curia_domain
 		https_port=$new_https_port
 		turn_port=$new_turn_port
+		turn_user_password=$new_turn_password
 		curia_email=$new_email
 		smtp_host=$new_smtp_host
 		smtp_port=$new_smtp_port
@@ -364,33 +421,45 @@ case $action in
 		next_step
 		;;
 	8)
+		confirm "turnadmin -a -u curia -r ${CURIA_DOMAIN} -p ${TURN_USER_PASSWORD}"
+		next_step
+		;;
+	9)
 		confirm "mkdir -p $CURIA_ROOT; chown $CURIA_USER:$CURIA_GROUP $CURIA_ROOT"
 		confirm "mkdir -p /var/log/curia; chown $CURIA_USER:$CURIA_GROUP /var/log/curia"
 		next_step
 		;;
-	9)
+	10)
 		#confirm "adduser --no-create-home --disabled-password --disabled-login $curia_user"
 		confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
 		next_step
 		;;
-	10)
-		certbot certonly --dry-run --standalone --preferred-challenges http -d $CURIA_DOMAIN
-		next_step
-		;;
 	11)
-		confirm "npm install npm@latest -g"
+		confirm "certbot certonly --dry-run --standalone --preferred-challenges http -d $CURIA_DOMAIN"
 		next_step
 		;;
 	12)
-		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone https://github.com/hwirth/curia_chat/; mv curia_chat/* .; rm -rf curia_chat\""
+		confirm "npm install npm@latest -g"
 		next_step
 		;;
 	13)
-		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; npm install\""
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone https://github.com/hwirth/curia_chat/; mv curia_chat/* .; rm -rf curia_chat\""
 		next_step
 		;;
 	14)
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; npm install\""
+		next_step
+		;;
+	15)
 		confirm "cd $CURIA_ROOT/server; node main.js --first-run"
+		next_step
+		;;
+	16)
+		confirm "create_systemd_service_file"
+		next_step
+		;;
+	17)
+		confirm "systemctl enable curia.service"
 		next_step
 		;;
 	*)
