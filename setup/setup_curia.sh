@@ -26,9 +26,9 @@
 #
 # If you start with step 1 (from your local machine), the following settings will be used:
 #
-server=MY.SERVER.COM
+server=YOUR.SERVER.COM
 port=22
-user=MY_USER_NAME
+user=YOUR_USER_NAME
 
 #
 # Whether to use colored output
@@ -62,7 +62,7 @@ curia_repository=https://github.com/hwirth/curia_chat/
 CURIA_USER="curia"
 CURIA_GROUP="curia"
 CURIA_ROOT="/srv/curia"
-CURIA_DOMAIN=YOUR.DOMAIN.COM
+CURIA_DOMAIN=YOUR.SERVER.COM
 HTTPS_PORT=443
 TURN_PORT=8001
 TURN_USER_PASSWORD=$(openssl rand -hex 32)
@@ -92,6 +92,7 @@ actions=(
 	"Upgrade npm"\
 	"Clone Curia GIT repository"\
 	"Install node modules"\
+	"Create client config file (config.json)"\
 	"Start server for the first time (Create admin account)"\
 	"Create systemd service file"\
 	"Enable and start systemd services"\
@@ -503,9 +504,6 @@ case $action in
 		confirm "create_curia_config_file $curia_config_file"
 		cat_highlighted "$curia_config_file"
 
-		confirm "create_client_config_json ${CURIA_ROOT}/client/config.json"
-		cat_highlighted "${CURIA_ROOT}/client/config.json"
-
 		confirm "create_coturn_config_file /etc/turnserver.conf"
 		cat_highlighted "/etc/turnserver.conf"
 
@@ -544,6 +542,10 @@ case $action in
 	14)
 		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT/server; npm install\""
 		next_step
+		;;
+	15)
+		confirm "create_client_config_json ${CURIA_ROOT}/client/config.json"
+		cat_highlighted "${CURIA_ROOT}/client/config.json"
 		;;
 	15)
 		confirm "cd $CURIA_ROOT/server; node main.js --first-run"
