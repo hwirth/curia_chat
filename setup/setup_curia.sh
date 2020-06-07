@@ -97,7 +97,6 @@ actions=(
 	"Create systemd service file"\
 	"Enable and start systemd services"\
 	"Clean up"\
-	"Done!"\
 )
 
 #
@@ -544,6 +543,7 @@ case $action in
 		;;
 	16)
 		confirm "cd $CURIA_ROOT/server; node main.js --first-run"
+		cd
 		;;
 	17)
 		confirm "create_systemd_service_file /etc/systemd/system/$curia_service_name"
@@ -552,17 +552,13 @@ case $action in
 	18)
 		confirm "systemctl enable coturn"
 		confirm "systemctl enable $curia_service_name"
-		confirm "systemctl start coturn"
-		confirm "systemctl status coturn"
-		confirm "systemctl start $curia_service_name"
-		confirm "systemctl status $curia_service_name"
+		confirm "systemctl start coturn; systemctl --no-pager status coturn"
+		confirm "systemctl start $curia_service_name; systemctl --no-pager status $curia_service_name"
 		next_step
 		;;
 	19)
 		confirm "rm $script_name"
-		;;
-	20)
-		# Done!
+		echo "Setup is complete. Log in to the chat at https://${CURIA_DOMAIN}/"
 		exit
 		;;
 	*)
