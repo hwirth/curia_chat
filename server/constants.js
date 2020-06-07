@@ -325,10 +325,10 @@ module.exports.REGISTRATION_MAIL = REGISTRATION_MAIL;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 const EXIT_CODES = {
+	FIRST_RUN_DONE          : 0,
 	REQUESTED_RESTART       : 1,
 	UNKNOWN                 : 2,
-	DATA_DIR_NOT_FOUND      : 3,
-	FIRST_RUN_DONE          : 4,   // 1..4 need to be in synch with  start_server.sh
+	DATA_DIR_NOT_FOUND      : 3,   // 0..3 need to be in synch with  start_server.sh
 
 	GLOBAL_ERROR_HANDLER    : 4,
 	UNDETERMINED_HOST       : 5,

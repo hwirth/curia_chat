@@ -515,13 +515,13 @@ case $action in
 		confirm "turnadmin -a -u curia -r ${CURIA_DOMAIN} -p ${TURN_USER_PASSWORD}"
 		;;
 	9)
-		confirm "addgroup curia"
-		confirm "adduser --system --shell=/bin/sh --disabled-password --home=$CURIA_ROOT --no-create-home --ingroup $CURIA_GROUP $CURIA_USER"
+		confirm "addgroup curia; adduser --system --shell=/bin/sh --disabled-password --home=$CURIA_ROOT --no-create-home --ingroup $CURIA_GROUP $CURIA_USER"
 		#confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
 		#confirm "adduser --no-create-home --disabled-password --disabled-login $CURIA_USER"
 		#confirm "adduser --system --no-create-home --group $CURIA_USER"
 		;;
 	10)
+		confirm "mkdir -p $CURIA_ROOT; chown $CURIA_USER:$CURIA_GROUP $CURIA_ROOT"
 		confirm "mkdir -p $curia_log_dir; chown $CURIA_USER:$CURIA_GROUP $curia_log_dir"
 		;;
 	11)
