@@ -1,16 +1,38 @@
 #!/bin/bash
 ##################################################################################################################119:#
+#
 #   CURIA CHAT SETUP HELPER
+#
+###################################################################################################################119:#
+#
+#   This script will install Curia Chat on your Debian server.
+#   You can download it to your local machine and start it from there (it will log in to your server):
+#
+#       me@home:~ $ ./setup_curia.sh
+#
+#   You can also store it on your server, in which case you will have to start it from step 4:
+#
+#       me@server $ ./setup_curia.sh 4
+#
+##################################################################################################################119:#
+
+
 ##################################################################################################################119:#
 #
 #   S E T T I N G S   -   A D J U S T   T H E S E   T O   Y O U R   N E E D S
 #
 ##################################################################################################################119:#
 
-server=classroom.enslavers.com
+#
+# If you start with step 1 (from your local machine), the following settings will be used:
+#
+server=MY.SERVER.COM
 port=22
-user=harald
+user=MY_USER_NAME
 
+#
+# Whether to use colored output
+#
 use_ansi_colors=true
 
 
@@ -20,14 +42,23 @@ use_ansi_colors=true
 #
 ##################################################################################################################119:#
 
+#
+# File names
+#
 curia_config_file=/etc/curia_chat.conf
 coturn_config_file=/etc/turnserver.conf
 coturn_default_file=/etc/default/coturn
 
+#
+# Other names
+#
 curia_service_name=curia_chat.service
 curia_log_dir=/var/log/curia
 curia_repository=https://github.com/hwirth/curia_chat/
 
+#
+# /etc/curia_chat.conf settings
+#
 CURIA_USER="curia"
 CURIA_GROUP="curia"
 CURIA_ROOT="/srv/curia"
@@ -42,9 +73,12 @@ SMTP_PORT=587
 SMTP_AUTH_USER=CURIA@MAILPROVIDER.COM
 SMTP_AUTH_PASS=SMTP_PASSWORD
 
+#
+# Install steps
+#
 actions=(
 	"UNDEFINED"\
-	"Verify the script's configuraion"\
+	"Verify the script's configuraion (if on your local computer)"\
 	"Upload the install script to the server"\
 	"Log in to the server and continue the setup process there"\
 	"Switch to root account"\
@@ -58,12 +92,15 @@ actions=(
 	"Upgrade npm"\
 	"Clone Curia GIT repository"\
 	"Install node modules"\
-	"Start server for the first time"\
+	"Start server for the first time (Create admin account)"\
 	"Create systemd service file"\
-	"Enable systemd service"\
+	"Enable and start systemd services"\
 	"Done!"\
 )
 
+#
+# Nice output
+#
 if [ "$use_ansi_colors" == "true" ] ; then
 	red="\e[1;31m"
 	green="\e[1;32m"
@@ -139,7 +176,7 @@ function confirm () {
 
 
 ##################################################################################################################119:#
-# INPUT - Print a question and let the user type and answer
+# INPUT - Print a question and let the user type an answer
 ##################################################################################################################119:#
 
 function input () {
@@ -153,7 +190,7 @@ function input () {
 
 
 ##################################################################################################################119:#
-# CAT_HIGHLIGHTED
+# CAT_HIGHLIGHTED - Show contents of a created file
 ##################################################################################################################119:#
 
 function cat_highlighted () {
@@ -165,7 +202,14 @@ function cat_highlighted () {
 
 
 ##################################################################################################################119:#
-# CREATE CURIA CONFIG FILE
+#
+#   C R E A T E   F I L E S
+#
+##################################################################################################################119:#
+
+
+##################################################################################################################119:#
+# /etc/curia_chat.conf
 ##################################################################################################################119:#
 
 function create_curia_config_file () {
@@ -213,7 +257,7 @@ EOF
 
 
 ##################################################################################################################119:#
-# CREATE CLIENT CONFIG JSON
+# /srv/curia/client/config.json
 ##################################################################################################################119:#
 
 function create_client_config_json () {
@@ -227,7 +271,7 @@ EOF
 
 
 ##################################################################################################################119:#
-# CREATE SYSTEMD SERCVICE FILE
+# /etc/systemd/system/curia_chat.service
 ##################################################################################################################119:#
 
 function create_systemd_service_file () {
@@ -246,7 +290,7 @@ EOF
 
 
 ##################################################################################################################119:#
-# CREATE COTURN CONFIG FILE
+# /etc/turnserver.conf
 ##################################################################################################################119:#
 
 function create_coturn_config_file () {
@@ -271,28 +315,13 @@ EOF
 
 
 ##################################################################################################################119:#
-# CREATE COTURN DEFAULT FILE
+# /etc/default/coturn
 ##################################################################################################################119:#
 
 function create_coturn_default_file () {
 	cat << EOF > $1
 TURNSERVER_ENABLED=1
 EOF
-}
-
-
-##################################################################################################################119:#
-# PARSE CONFIG FILE - Gather settings from  curia_chat.conf
-##################################################################################################################119:#
-
-function parse_config_file () {
-	if [ -f $curia_config_file ] ; then
-		while read -r key value; do
-			[[ $key == \#* ]] && continue;
-			[[ $key == '' ]] && continue;
-			export "$key=$value"
-		done < $curia_config_file
-	fi
 }
 
 
@@ -325,7 +354,7 @@ esac
 step="STEP $action: ${actions[$action]}"
 
 #
-# Show overwiew
+# Show overwiew (current step/help)
 #
 echo -e "$normal.------------------------------------------------------------------------------"
 if [ "$action" == "1" ] ; then
@@ -339,16 +368,22 @@ else
 	echo "| $step"
 	if [ "$action" == "1" ] ; then
 		echo "|------------------------------------------------------------------------------"
-		echo "| Host name: $current_host"
-		echo "| SSH login: ssh -p $port $user@$server"
+		echo "| You are logged in at: $current_host"
+		echo "| Step 2 SSH command:   ssh -p $port $user@$server"
 	fi
 	echo "'------------------------------------------------------------------------------"
 fi
 
 #
-# Try to read /etc/curia_chat.conf
+# If the file already exists, import settings from  /etc/curia_chat.conf
 #
-parse_config_file
+if [ -f $curia_config_file ] ; then
+	while read -r key value; do
+		[[ $key == \#* ]] && continue;
+		[[ $key == '' ]] && continue;
+		export "$key=$value"
+	done < $curia_config_file
+fi
 
 #
 # Execute selected step
@@ -358,7 +393,10 @@ case $action in
 		echo "Check the values above and adjust the variables in this script as needed."
 		echo
 		echo "Then call"
-		echo "  $script_name 2          to continue with the next step"
+		echo "  $script_name 2          to continue with the next step (when on your local computer)"
+		echo
+		echo "If you are already logged in on your server (not as root!):"
+		echo "  $script_name 4          to continue with the next step (when logged in to your server)"
 		echo
 		echo "Alternatively,"
 		echo "  $script_name <number>   to execute a specific step at your will"
@@ -515,7 +553,12 @@ case $action in
 		next_step
 		;;
 	17)
+		confirm "systemctl enable coturn"
 		confirm "systemctl enable $curia_service_name"
+		confirm "systemctl start coturn"
+		confirm "systemctl status coturn"
+		confirm "systemctl start $curia_service_name"
+		confirm "systemctl status $curia_service_name"
 		next_step
 		;;
 	18)

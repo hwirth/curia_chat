@@ -138,7 +138,9 @@ module.exports.Accounts = function (chat) {
 		console.log(
 			'\nNew data file will be created:\n'
 			+ __dirname + '/' + SETTINGS.ACCOUNTS.FILE_NAME
-			+ '\n\nSetting up the administrator account:'
+			+ '\n\nSetting up the administrator account.'
+			+ '\nYou will be seen in the chat with this account, better not to name it "admin" ;-)'
+			+ '\nI'\d suggest, you simply use your name:'
 		);
 
 		const user_name = await get_user_name();
