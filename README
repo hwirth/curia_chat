@@ -301,6 +301,7 @@ $ chromium https://domain.com/chat?name=MY_NAME
 7. TODO
 =======
 
+[ ] Embed wikipedia etc (black board mode)
 [ ] Fix data file creation - don't do it in accounts, also move accounts to flat_file_db
 [?] Don't scroll, while scrolled up and mouse over chat main area
 

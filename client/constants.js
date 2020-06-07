@@ -77,7 +77,13 @@ export const SETTINGS = {
 	ERRORS_TO_MAIN_ROOM   : !false,
 	LOCALIZE_ROOM_NAMES   : true,
 
-	WEB_SOCKET_URL: ':3443',
+	WEB_SOCKET: {
+		URL  : ((location.protocol == 'https:') ? 'wss' : 'ws') + '://' + location.hostname,
+		PORT : ((location.protocol == 'https:') ? 443 : 80),
+	},
+
+	FORCE_HTTPS: true,
+
 	PUBLIC_IP_URL: '/public_ip',
 
 	AUTO_RECONNECT_SECONDS  : 3,   // null or initial number of seconds to wait before reloading the chat

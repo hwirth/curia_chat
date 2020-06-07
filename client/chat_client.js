@@ -855,9 +855,8 @@ export const ChatClient = function (app) {
 		} // remove_attempt_get_parameter
 
 
-		show_message( localized( 'CONNECTING_TO_SERVER', SETTINGS.WEB_SOCKET_URL ) );
-
-		self.websocket = new WebSocket( SETTINGS.WEB_SOCKET_URL ) //..., 'my_chat_protocol' );
+		show_message( localized( 'CONNECTING_TO_SERVER', SETTINGS.WEB_SOCKET.URL ) );
+		self.websocket = new WebSocket( SETTINGS.WEB_SOCKET.URL ) //..., 'my_chat_protocol' );
 
 		self.setConnectionState( CHAT_CONNECTION.CONNECTING );
 
@@ -3239,8 +3238,27 @@ if (user != undefined) {
 	/**
 	 * init()
 	 */
-	this.init = function () {
+	this.init = async function () {
 		self.setConnectionState( CHAT_CONNECTION.INITIALIZING );
+
+		if (SETTINGS.FORCE_HTTPS && (window.location.protocol == 'http:')) {
+			window.location.href = window.location.href.replace( 'http', 'https' );
+			return;
+		}
+
+		await fetch( 'config.json' ).then( (response)=>{
+			if (! response.ok) {
+				throw new Error( 'HTTP error, status = ' + response.status );
+			}
+			return response.text();
+
+		}).then( (json)=>{
+			const data = JSON.parse( json );
+
+			if (data.webSocketPort != undefined) {
+				SETTINGS.WEB_SOCKET.URL += ':' + data.webSocketPort;
+			}
+		});
 
 		for (let key in CHAT_EVENTS) {
 			CHAT_EVENTS[key].key = key;
@@ -3314,13 +3332,12 @@ if (user != undefined) {
 		setTimeout( ()=>app.dom.divCommands       .classList.add   ( 'collapsed' ), 2000 );
 		setTimeout( ()=>app.dom.divCommandsResizer.classList.remove( 'hint_at'   ), 2750 );
 	*/
-
 	}; // init
 
 
 	// CONSTRUCTOR
 
-	self.init();
+	return self.init().then( ()=>self );
 
 }; // ChatClient
 

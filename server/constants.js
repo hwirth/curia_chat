@@ -128,12 +128,12 @@ const SETTINGS = {
 			CONFIGURED: {
 				sender: config_file.EMAIL_SENDER_NAME,
 				SMTP: {
-					host   : config_file.EMAIL_SMTP_HOST,
-					port   : config_file.EMAIL_SMTP_PORT,
-					secure : (config_file.EMAIL_SMTP_SECURE == 'true'),
+					host   : config_file.SMTP_HOST,
+					port   : config_file.SMTP_PORT,
+					secure : (config_file.SMTP_SECURE == 'true'),
 					auth: {
-						user: config_file.EMAIL_SMTP_AUTH_USER,
-						pass: config_file.EMAIL_SMTP_AUTH_PASS,
+						user: config_file.SMTP_AUTH_USER,
+						pass: config_file.SMTP_AUTH_PASS,
 					},
 					tls: {
 						rejectUnauthorized: false,
@@ -217,7 +217,7 @@ const WSS_OPTIONS = {
 
 
 const TURN_OPTIONS = {
-	SERVER_URI         : config_file.TURN_SERVER_DOMAIN + ':' + config_file.TURN_SERVER_PORT,
+	SERVER_URI         : config_file.TURN_DOMAIN + ':' + config_file.TURN_PORT,
 	LEASE_TIME         : config_file.TURN_LEASE_TIME,
 	ALGORITHM          : config_file.TURN_ALGORITHM,
 	USER_NAME          : config_file.TURN_USER_NAME,
@@ -338,8 +338,6 @@ const EXIT_CODES = {
 	FLAT_FILE_DB_READ_ERROR : 9,
 
 }; // EXIT_CODES
-
-
 
 
 // https://www.sitepoint.com/mime-types-complete-list/

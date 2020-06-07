@@ -135,7 +135,7 @@ if (error_location == undefined) return;
 					}
 
 					message   = event.reason.message;
-					file_name = event.reason.fileName;
+					file_name = event.reason.fileName || event.reason.filename;
 					line_nr   = event.reason.lineNumber;
 					col_nr    = event.reason.columnNumber;
 
@@ -276,29 +276,12 @@ if (error_location == undefined) return;
 
 		Helpers.upgradeDOM( self );
 
-		const href = window.location.href;
-		const end = href.indexOf( '/', 'https://'.length+1 );
-		const domain = href.substr( 0, end ).replace( 'https://', '' ).replace( 'http://', '' );
-		SETTINGS.SERVER_NAME = domain;
-
-		if (window.location.protocol == 'https:') {
-			if (domain.substr(-5) == SETTINGS.WEB_SOCKET_URL) {
-				SETTINGS.WEB_SOCKET_URL = 'wss://' + domain;
-			} else {
-				SETTINGS.WEB_SOCKET_URL = 'wss://' + domain + SETTINGS.WEB_SOCKET_URL ;
-			}
-		} else {
-			window.location.href = window.location.href.replace( 'http', 'https' );
-			return;
-		}
-
 		const dark_mode
 		= Helpers.isDarkModeEnabled()
 		? 'Dark mode'
 		: 'Light mode'
 		;
 
-		console.log( 'SETTINGS.WEB_SOCKET_URL', SETTINGS.WEB_SOCKET_URL );
 		console.groupCollapsed( 'Device Info (' + dark_mode + ')' );
 		console.table( Helpers.getDeviceInfo() );
 		console.groupEnd();
@@ -307,7 +290,7 @@ if (error_location == undefined) return;
 			console.log( 'Screen orientation changed:', screen.orientation.angle );
 		});
 
-		self.chat = new ChatClient( self );
+		self.chat = await new ChatClient( self );
 
 		/*
 		 * Remove splash screen

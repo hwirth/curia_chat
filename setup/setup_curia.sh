@@ -20,20 +20,27 @@ use_ansi_colors=true
 #
 ##################################################################################################################119:#
 
-config_file_name="/etc/curia_chat.conf"
-curia_user="curia"
-curia_group="curia"
-curia_root="/srv/curia"
-curia_domain=YOUR.DOMAIN.COM
-https_port=443
-turn_port=8001
-turn_user_password=$(openssl rand -hex 32)
-turn_static_secret=CHANGE_ME
-curia_email=CURIA@MAILPROVIDER.COM
-smtp_host=SMTP.MAILPROVIDER.COM
-smtp_port=587
-smtp_auth_user=CURIA@MAILPROVIDER.COM
-smtp_auth_pass=SMTP_PASSWORD
+curia_config_file=/etc/curia_chat.conf
+coturn_config_file=/etc/turnserver.conf
+coturn_default_file=/etc/default/coturn
+
+curia_service_name=curia_chat.service
+curia_log_dir=/var/log/curia
+curia_repository=https://github.com/hwirth/curia_chat/
+
+CURIA_USER="curia"
+CURIA_GROUP="curia"
+CURIA_ROOT="/srv/curia"
+CURIA_DOMAIN=YOUR.DOMAIN.COM
+HTTPS_PORT=443
+TURN_PORT=8001
+TURN_USER_PASSWORD=$(openssl rand -hex 32)
+TURN_STATIC_SECRET=$(openssl rand -hex 32)
+EMAIL_SENDER_NAME=CURIA@MAILPROVIDER.COM
+SMTP_HOST=SMTP.MAILPROVIDER.COM
+SMTP_PORT=587
+SMTP_AUTH_USER=CURIA@MAILPROVIDER.COM
+SMTP_AUTH_PASS=SMTP_PASSWORD
 
 actions=(
 	"UNDEFINED"\
@@ -43,9 +50,9 @@ actions=(
 	"Switch to root account"\
 	"Update the server's operating system"\
 	"Install required packages"\
-	"Create $config_file_name"\
+	"Create configuration files"\
 	"Create coturn user"\
-	"Create directory struction"\
+	"Create directory structure"\
 	"Create user for curia server"\
 	"Create letsencrypt SSL keys"\
 	"Upgrade npm"\
@@ -54,15 +61,16 @@ actions=(
 	"Start server for the first time"\
 	"Create systemd service file"\
 	"Enable systemd service"\
+	"Done!"\
 )
 
 if [ "$use_ansi_colors" == "true" ] ; then
-	color_red="\e[1;31m"
-	color_green="\e[1;32m"
-	color_blue="\e[1;34m"
-	color_yellow="\e[1;33m"
-	color_bright="\e[1;37m"
-	color_normal="\e[0;37m"
+	red="\e[1;31m"
+	green="\e[1;32m"
+	blue="\e[1;34m"
+	yellow="\e[1;33m"
+	bright="\e[1;37m"
+	normal="\e[0;37m"
 fi
 
 
@@ -97,12 +105,12 @@ function next_step () {
 
 function confirm () {
 	if [ "$(whoami)" == "root" ] ; then
-		prompt=$color_red
+		prompt=$red
 	else
-		prompt=$color_green
+		prompt=$green
 	fi
 
-	prompt="${prompt}$(whoami)@$(hostname)${color_normal}"
+	prompt="${prompt}$(whoami)@$(hostname)${normal}"
 
 	if [ "$(whoami)" == "root" ] ; then
 		prompt="$prompt # "
@@ -112,14 +120,20 @@ function confirm () {
 
 	command=$1
 
-	echo -en "${color_yellow}> ${prompt}${color_yellow}${command}${color_normal} (Enter/CTRL+C) "
-	read
 
-	eval $command
+	answer=""
+	while [ "$answer" != "y" ] && [ "$answer" != "n" ] ; do
+		echo -en "${yellow}> ${prompt}${yellow}${command}${normal} (y/n=skip) "
+		read answer
+	done
 
-	error_code=$?
-	if [ "$error_code" != "0" ] ; then
-		exit $error_code
+	if [ "$answer" == "y" ] ; then
+		eval $command
+
+		error_code=$?
+		if [ "$error_code" != "0" ] ; then
+			exit $error_code
+		fi
 	fi
 }
 
@@ -139,43 +153,55 @@ function input () {
 
 
 ##################################################################################################################119:#
-# CREATE CONFIG FILE
+# CAT_HIGHLIGHTED
 ##################################################################################################################119:#
 
-function create_config_file () {
-	cat << EOF > $config_file_name
-# ${config_file_name}
+function cat_highlighted () {
+	echo "Contents of $1:"
+	echo -en $blue
+	cat $1
+	echo -en $normal
+}
+
+
+##################################################################################################################119:#
+# CREATE CURIA CONFIG FILE
+##################################################################################################################119:#
+
+function create_curia_config_file () {
+	cat << EOF > $1
+# $1
 ##################################################################################################################119:#
 # CURIA CHAT CONFIGURATION
 ##################################################################################################################119:#
 
-CURIA_USER		${curia_user}
-CURIA_GROUP		${curia_group}
-CURIA_ROOT              ${curia_root}
-CURIA_DOMAIN		${curia_domain}
+CURIA_USER		${CURIA_USER}
+CURIA_GROUP		${CURIA_GROUP}
+CURIA_ROOT              ${CURIA_ROOT}
+CURIA_DOMAIN		${CURIA_DOMAIN}
 
 LOG_TO_FILE		true
 LOG_TO_CONSOLE		true
 
-SSL_PUBLIC_KEY_FILE	/etc/letsencrypt/live/${curia_domain}/cert.pem
-SSL_PRIVATE_KEY_FILE	/etc/letsencrypt/live/${curia_domain}/privkey.pem
+SSL_PUBLIC_KEY_FILE	/etc/letsencrypt/live/${CURIA_DOMAIN}/cert.pem
+SSL_PRIVATE_KEY_FILE	/etc/letsencrypt/live/${CURIA_DOMAIN}/privkey.pem
 
-HTTPS_PORT		${https_port}
+HTTPS_PORT		${HTTPS_PORT}
 
-TURN_SERVER_DOMAIN	${curia_domain}
-TURN_SERVER_PORT	${turn_port}
+TURN_DOMAIN		${CURIA_DOMAIN}
+TURN_PORT		${TURN_PORT}
 TURN_LEASE_TIME		3600
 TURN_ALGORITHM		sha1
 TURN_USER_NAME		curia
-TURN_USER_PASSWORD	${turn_user_password}
-TURN_STATIC_SECRET	${turn_static_secret}
+TURN_USER_PASSWORD	${TURN_USER_PASSWORD}
+TURN_STATIC_SECRET	${TURN_STATIC_SECRET}
 
-EMAIL_SENDER_NAME	${curia_email}
-EMAIL_SMTP_HOST		${smtp_host}
-EMAIL_SMPT_PORT		${smtp_port}
-EMAIL_SMTP_SECURE	false
-EMAIL_SMPT_AUTH_USER	${smtp_auth_user}
-EMAIL_SMPT_AUTH_PASS	${smtp_auth_pass}
+EMAIL_SENDER_NAME	${EMAIL_SENDER_NAME}
+SMTP_HOST		${SMTP_HOST}
+SMPT_PORT		${SMTP_PORT}
+SMTP_SECURE		false
+SMTP_AUTH_USER		${SMTP_AUTH_USER}
+SMTP_AUTH_PASS		${SMTP_AUTH_PASS}
 
 NOTIFY_OWNER_ENABLED	false
 NOTIFY_OWNER_DOMAIN	MY_HOME_SERVER.COM
@@ -187,11 +213,25 @@ EOF
 
 
 ##################################################################################################################119:#
+# CREATE CLIENT CONFIG JSON
+##################################################################################################################119:#
+
+function create_client_config_json () {
+	cat << EOF > $1
+{
+	"webSocketPort": ${HTTPS_PORT}
+}
+EOF
+	chown $CURIA_USER:$CURIA_GROUP $1
+}
+
+
+##################################################################################################################119:#
 # CREATE SYSTEMD SERCVICE FILE
 ##################################################################################################################119:#
 
 function create_systemd_service_file () {
-	cat << EOF > /etc/systemd/system/curia_chat.service
+	cat << EOF > $1
 [Unit]
 Description=Curia Chat Server
 
@@ -210,11 +250,11 @@ EOF
 ##################################################################################################################119:#
 
 function create_coturn_config_file () {
-	mv /etc/coturn.conf /etc/coturn.conf.ORIG
+	mv $1 $1.ORIG
 
-	cat << EOF >> /etc/coturn.conf
-#listening-port=${TURN_PORT}
-tls-listening-port=${TURN_PORT}
+	cat << EOF >> $1
+listening-port=${TURN_PORT}
+#tls-listening-port=${TURN_PORT}
 fingerprint
 use-auth-secret
 static-auth-secret=${TURN_STATIC_SECRET}
@@ -227,9 +267,17 @@ realm=${CURIA_DOMAIN}
 proc-user=turnserver
 proc-group=turnserver
 EOF
+}
 
-	cat << EOF >> /etc/defaults/coturn
+
+##################################################################################################################119:#
+# CREATE COTURN DEFAULT FILE
+##################################################################################################################119:#
+
+function create_coturn_default_file () {
+	cat << EOF > $1
 TURNSERVER_ENABLED=1
+EOF
 }
 
 
@@ -238,12 +286,12 @@ TURNSERVER_ENABLED=1
 ##################################################################################################################119:#
 
 function parse_config_file () {
-	if [ -f $config_file_name ] ; then
+	if [ -f $curia_config_file ] ; then
 		while read -r key value; do
 			[[ $key == \#* ]] && continue;
 			[[ $key == '' ]] && continue;
 			export "$key=$value"
-		done < $config_file_name
+		done < $curia_config_file
 	fi
 }
 
@@ -279,7 +327,7 @@ step="STEP $action: ${actions[$action]}"
 #
 # Show overwiew
 #
-echo -e "$color_normal.------------------------------------------------------------------------------"
+echo -e "$normal.------------------------------------------------------------------------------"
 if [ "$action" == "1" ] ; then
 	echo "| CURIA SERVER SETUP"
 fi
@@ -324,7 +372,7 @@ case $action in
 		next_step
 		;;
 	3)
-		confirm "ssh -t -p $port $user@$server \"echo -e '\\n\${color_blue}You are now logged in to $server\${color_normal}\\n'; ./$script_name 4\""
+		confirm "ssh -t -p $port $user@$server \"echo -e '\\n\${blue}You are now logged in to $server\${normal}\\n'; ./$script_name 4\""
 		;;
 	4)
 		confirm "su -c \"cp $script_name ~; cd; ./$script_name 5\""
@@ -341,52 +389,52 @@ case $action in
 		answer=""
 		while [ "$answer" != 'y' ] ; do
 			echo -e "Press enter to keep the values:"
-			input "server user ($color_blue$curia_user$color_normal): " "$curia_user"
-			new_user=$input_text
+			input "server user ($blue$CURIA_USER$normal): " "$CURIA_USER"
+			new_curia_user=$input_text
 
-			input "server group ($color_blue$curia_group$color_normal): " "$curia_group"
-			new_group=$input_text
+			input "server group ($blue$CURIA_GROUP$normal): " "$CURIA_GROUP"
+			new_curia_group=$input_text
 
-			input "Server directory ($color_blue$curia_root$color_normal): " "$curia_root"
+			input "Server directory ($blue$CURIA_ROOT$normal): " "$CURIA_ROOT"
 			new_curia_root=$input_text
 
-			input "Server domain ($color_blue$curia_domain$color_normal): " "$curia_domain"
+			input "Server domain ($blue$CURIA_DOMAIN$normal): " "$CURIA_DOMAIN"
 			new_curia_domain=$input_text
 
-			input "HTTPS port ($color_blue$https_port$color_normal): " "$https_port"
+			input "HTTPS port ($blue$HTTPS_PORT$normal): " "$HTTPS_PORT"
 			new_https_port=$input_text
 
-			input "TURN port ($color_blue$turn_port$color_normal): " "$turn_port"
+			input "TURN port ($blue$TURN_PORT$normal): " "$TURN_PORT"
 			new_turn_port=$input_text
 
-			input "TURN user password ($color_blue$turn_user_password$color_normal): " "$turn_user_password"
+			input "TURN user password ($blue$TURN_USER_PASSWORD$normal): " "$TURN_USER_PASSWORD"
 			new_turn_user_password=$input_text
 
-			input "Curia email address ($color_blue$curia_email$color_normal): " "$curia_email"
-			new_email=$input_text
+			input "Curia email address ($blue$EMAIL_SENDER_NAME$normal): " "$EMAIL_SENDER_NAME"
+			new_email_sender_name=$input_text
 
-			input "SMTP host ($color_blue$smtp_host$color_normal): " "$smtp_host"
+			input "SMTP host ($blue$SMTP_HOST$normal): " "$SMTP_HOST"
 			new_smtp_host=$input_text
 
-			input "SMTP port ($color_blue$smtp_port$color_normal): " "$smtp_port"
+			input "SMTP port ($blue$SMTP_PORT$normal): " "$SMTP_PORT"
 			new_smtp_port=$input_text
 
-			input "SMTP auth user ($color_blue$smtp_auth_user$color_normal): " "$smtp_auth_user"
+			input "SMTP auth user ($blue$SMTP_AUTH_USER$normal): " "$SMTP_AUTH_USER"
 			new_smtp_user=$input_text
 
-			input "SMTP password ($color_blue$smtp_auth_pass$color_normal): " "$smtp_auth_pass"
+			input "SMTP password ($blue$SMTP_AUTH_PASS$normal): " "$SMTP_AUTH_PASS"
 			new_smtp_pass=$input_text
 
 			echo
 			echo "You chose the following settings:"
-			echo "  Server user:      $new_user"
-			echo "  Server group:     $new_group"
+			echo "  Server user:      $new_curia_user"
+			echo "  Server group:     $new_curia_group"
 			echo "  Curia directory:  $new_curia_root"
 			echo "  Curia domain:     $new_curia_domain"
 			echo "  HTTPS port:       $new_https_port"
 			echo "  TURN port:        $new_turn_port"
 			echo "  TURN user passwd: $new_turn_user_password"
-			echo "  Curia email:      $new_email"
+			echo "  Curia email:      $new_email_sender_name"
 			echo "  SMTP host:        $new_smtp_host"
 			echo "  SMTP port:        $new_smtp_port"
 			echo "  SMTP login:       $new_smtp_user"
@@ -399,24 +447,30 @@ case $action in
 			done
 		done
 
-		curia_user=$new_user
-		curia_group=$new_group
-		curia_root=$new_curia_root
-		curia_domain=$new_curia_domain
-		https_port=$new_https_port
-		turn_port=$new_turn_port
-		turn_user_password=$new_turn_password
-		curia_email=$new_email
-		smtp_host=$new_smtp_host
-		smtp_port=$new_smtp_port
-		smtp_auth_user=$new_smtp_user
-		smtp_auth_pass=$new_smtp_pass
+		CURIA_USER=$new_curia_user
+		CURIA_GROUP=$new_curia_group
+		CURIA_ROOT=$new_curia_root
+		CURIA_DOMAIN=$new_curia_domain
+		HTTPS_PORT=$new_https_port
+		TURN_PORT=$new_turn_port
+		TURN_USER_PASSWORD=$new_turn_user_password
+		EMAIL_SENDER_NAME=$new_email_sender_name
+		SMTP_HOST=$new_smtp_host
+		SMTP_PORT=$new_smtp_port
+		SMTP_AUTH_USER=$new_smtp_user
+		SMTP_AUTH_PASS=$new_smtp_pass
 
-		confirm "create_config_file $config_file_name"
+		confirm "create_curia_config_file $curia_config_file"
+		cat_highlighted "$curia_config_file"
 
-		echo -en $color_blue
-		cat $config_file_name
-		echo -en $color_normal
+		confirm "create_client_config_json ${CURIA_ROOT}/client/config.json"
+		cat_highlighted "${CURIA_ROOT}/client/config.json"
+
+		confirm "create_coturn_config_file /etc/turnserver.conf"
+		cat_highlighted "/etc/turnserver.conf"
+
+		confirm "create_coturn_default_file $coturn_default_file"
+		cat_highlighted $coturn_default_file
 
 		next_step
 		;;
@@ -426,16 +480,17 @@ case $action in
 		;;
 	9)
 		confirm "mkdir -p $CURIA_ROOT; chown $CURIA_USER:$CURIA_GROUP $CURIA_ROOT"
-		confirm "mkdir -p /var/log/curia; chown $CURIA_USER:$CURIA_GROUP /var/log/curia"
+		confirm "mkdir -p $curia_log_dir; chown $CURIA_USER:$CURIA_GROUP $curia_log_dir"
 		next_step
 		;;
 	10)
-		#confirm "adduser --no-create-home --disabled-password --disabled-login $curia_user"
-		confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
+		confirm "adduser --no-create-home --disabled-password --disabled-login $CURIA_USER"
+		#confirm "adduser --home=$CURIA_ROOT/home $CURIA_USER"
 		next_step
 		;;
 	11)
-		confirm "certbot certonly --dry-run --standalone --preferred-challenges http -d $CURIA_DOMAIN"
+		#confirm "certbot certonly --dry-run --standalone --preferred-challenges http -d $CURIA_DOMAIN"
+		confirm "certbot certonly --standalone --preferred-challenges http -d $CURIA_DOMAIN"
 		next_step
 		;;
 	12)
@@ -443,7 +498,7 @@ case $action in
 		next_step
 		;;
 	13)
-		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone https://github.com/hwirth/curia_chat/; mv curia_chat/* .; rm -rf curia_chat\""
+		confirm "su $CURIA_USER -c \"cd $CURIA_ROOT; git clone $curia_repository; mv curia_chat/* .; rm -rf curia_chat\""
 		next_step
 		;;
 	14)
@@ -455,12 +510,16 @@ case $action in
 		next_step
 		;;
 	16)
-		confirm "create_systemd_service_file"
+		confirm "create_systemd_service_file /etc/systemd/system/$curia_service_name"
+		cat_highlighted /etc/systemd/system/$curia_service_name
 		next_step
 		;;
 	17)
-		confirm "systemctl enable curia.service"
+		confirm "systemctl enable $curia_service_name"
 		next_step
+		;;
+	18)
+		# Done!
 		;;
 	*)
 		echo "Unknown option: $@"

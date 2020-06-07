@@ -42,7 +42,7 @@ const {
 const {
 	PROGRAM_NAME, PROGRAM_VERSION,
 	EXIT_CODES, SETTINGS, ALLOWED_URI_CHARS,
-	SSL_KEYS, MIME_TYPES, HTTPS_OPTIONS, WSS_OPTIONS,
+	SSL_KEYS, MIME_TYPES, HTTPS_OPTIONS, WSS_OPTIONS, TURN_OPTIONS,
 
 } = require( './constants.js' );
 
@@ -66,6 +66,9 @@ async function init () {
 	console.log( '| PRIVATE KEY       ', SSL_KEYS.PRIVATE );
 	console.log( '| PUBLIC KEY        ', SSL_KEYS.PUBLIC );
 	console.log( '| DOCUMENT_ROOT     ', SETTINGS.SERVER.DOCUMENT_ROOT );
+	console.log( '| TURN SERVER URI   ', TURN_OPTIONS.SERVER_URI );
+	console.log( '| TURN USER_NAME    ', TURN_OPTIONS.USER_NAME );
+	console.log( '| TURN STATIC_AUTH  ', TURN_OPTIONS.STATIC_AUTH_SECRET );
 	console.log( '| LOG TO CONSOLE    ', SETTINGS.LOG.TO_CONSOLE );
 	console.log( '| LOG TO FILE       ', SETTINGS.LOG.TO_FILE, SETTINGS.LOG.FILE_NAME );
 	console.log( '| LOG MAX FILE SIZE ', Math.round( SETTINGS.LOG.MAX_FILE_SIZE / 1024 ), 'K' );
