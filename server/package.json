@@ -27,7 +27,7 @@
 		"fs.realpath": "^1.0.0",
 		"glob": "^7.1.6",
 		"image-size": "^0.8.3",
-		"nodemailer": "^6.4.6",
+		"nodemailer": "^6.4.16",
 		"re-require-module": "^1.0.2",
 		"read": "^1.0.7",
 		"whois": "^2.12.1",
