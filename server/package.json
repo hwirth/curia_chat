@@ -23,7 +23,7 @@
 		"start": "node main.js"
 	},
 	"dependencies": {
-		"follow-redirects": "^1.11.0",
+		"follow-redirects": "^1.14.7",
 		"fs.realpath": "^1.0.0",
 		"glob": "^7.1.6",
 		"image-size": "^0.8.3",
